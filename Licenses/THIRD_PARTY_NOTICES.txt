@@ -1,0 +1,41 @@
+LivePhoto Studio — Third-party notices
+
+This project is distributed under the MIT License. See LICENSE in the source
+and LivePhotoStudio-MIT.txt in the application resources.
+Copyright notices for incorporated upstream code remain with their authors.
+This project's MIT notice does not relicense Apple's platform components,
+system fonts, SF Symbols, product names, or trademarks.
+
+Revive
+https://github.com/Ed3110/Revive
+Reference revision: feb46245b5c6a1d3982909916832a02d71a33828
+Copyright (c) 2026 Edward Shen
+License: MIT; the complete upstream notice is retained in Revive-MIT.txt.
+License source at the reference revision:
+https://github.com/Ed3110/Revive/blob/feb46245b5c6a1d3982909916832a02d71a33828/LICENSE
+Portions of Engine.swift, Verifier.swift and EngineTests.swift are based on
+or adapted from Revive's Live Photo conversion and verification code.
+Our app interface, batch workflow and other modifications are not upstream
+Revive releases. No endorsement by the upstream author is implied.
+The upstream license mentions the Great Vibes font. This application does not
+bundle or use that font; its note is retained as part of the upstream license.
+
+makelive
+https://github.com/RhetTbull/makelive
+Reference revision: 40abfa4a5bc458609ddb9087d3a2743a826103a4
+Copyright (c) 2024 Rhet Turnbull
+License: MIT; the complete upstream notice is retained in makelive-MIT.txt.
+License source at the reference revision:
+https://github.com/RhetTbull/makelive/blob/40abfa4a5bc458609ddb9087d3a2743a826103a4/LICENSE
+The Live Photo sharing package structure in AirDrop.swift follows the PVT
+layout used by makelive, including PFVideoComplementMetadataVersionKey.
+The makelive executable and Python package are not bundled or required.
+
+Assets and platform components
+The app icon was created with AI assistance; it is not an asset copied from
+Revive or makelive. Its original content provenance is retained. Provenance
+records describe its origin, not a determination of exclusive copyright or
+trademark rights. The app uses Apple's system fonts, frameworks and SF Symbols at
+runtime; it does not redistribute Apple's SDK or a third-party font library.
+Apple, macOS, Live Photos and AirDrop are Apple product or technology names.
+This project is independent and is not endorsed by Apple.
