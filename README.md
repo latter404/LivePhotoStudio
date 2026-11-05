@@ -14,22 +14,21 @@
 
 *1.0 正式版实机截图，使用合成测试视频。*
 
-<details>
-<summary>更多截图：裁切与参数、水印、英文浅色界面</summary>
+## 更多功能展示
 
-**比例裁切与自定义输出**
+### 比例裁切与自定义输出
 
 ![9:16 裁切选框及分辨率、帧率滑条](Assets/crop-custom-1.0.jpg)
 
-**自定义水印**
+### 自定义水印
 
 ![水印文字、自由位置、大小和透明度](Assets/watermark-1.0.jpg)
 
-**English · 浅色外观**
+### English · 浅色外观
 
 ![LivePhoto Studio 英文浅色界面](Assets/english-light-1.0.jpg)
 
-</details>
+
 
 ## 能做什么
 

@@ -14,22 +14,21 @@ A native Mac app that processes videos locally. No account or separate FFmpeg, P
 
 *Actual screenshot of the 1.0 release, using synthetic test footage.*
 
-<details>
-<summary>More screenshots: dark appearance, cropping and output settings, watermarks</summary>
+## More screenshots
 
-**Simplified Chinese · Dark appearance**
+### Simplified Chinese · Dark appearance
 
 ![Video preview, timeline, and editing controls](Assets/editor-1.0.jpg)
 
-**Crop and custom output**
+### Crop and custom output
 
 ![A 9:16 crop with resolution and frame-rate sliders](Assets/crop-custom-1.0.jpg)
 
-**Watermarks**
+### Watermarks
 
 ![Watermark text, free positioning, size, and opacity](Assets/watermark-1.0.jpg)
 
-</details>
+
 
 ## Features
 
