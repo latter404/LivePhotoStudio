@@ -1,43 +1,80 @@
-# LivePhoto Studio · 实况工坊
+<p align="center"><img src="Assets/AppIcon.png" width="88" alt="LivePhoto Studio icon"></p>
 
-[简体中文](README.md) · Author: [latter404](https://github.com/latter404)
+<h1 align="center">LivePhoto Studio · 实况工坊</h1>
 
-Create Live Photos and GIFs from videos on your Mac. Choose a clip on the timeline, adjust its appearance, and click **Process** to collect processed items. Then add your selection to Photos, send it with AirDrop, or export files together.
+<p align="center">Turn a few favorite seconds into a Live Photo or GIF.</p>
 
-A native macOS app for Apple silicon and Intel, requiring macOS 14 or later. Using the app does not require FFmpeg, Python, Homebrew, or Xcode.
+<p align="center"><a href="https://github.com/latter404/LivePhotoStudio/releases/latest">Download</a> · <a href="README.md">简体中文</a> · <a href="RELEASE_NOTES.md">Release notes</a> · <a href="https://github.com/latter404/LivePhotoStudio/issues">Report an issue</a></p>
 
-This document describes the **1.0** source tree. See the [release notes](RELEASE_NOTES.md) for availability, distributed builds, and the scope of completed validation.
+**macOS 14+ · Apple silicon / Intel · English / Simplified Chinese · MIT licensed**
 
-## Workflow
+A native Mac app that processes videos locally. No account or separate FFmpeg, Python, Homebrew, or Xcode installation is needed to use it.
 
-1. **Open a video.** Before import, the left side shows a video drop area: drag a video onto it, click to choose a file, or press `⌘O`. Settings, processing controls, and actions for existing results remain on the right. With the Finder extension enabled, right-click a single video and choose **Convert to Live Photo**.
-2. **Choose a clip.** The default selection is three seconds. Drag the selection to move it, its ends to change duration, and the white marker to choose the cover. Videos longer than ten seconds initially show a ten-second timeline range.
-3. **Process and keep creating.** Use **Editing** for crop, rotation, watermark, and mute controls. Choose the format, quality, and custom parameters in **Output**, then click **Process**. The completed clip becomes an independent processed item. Continue with another section or another source video.
-4. **Select processed items.** Click **Processed** to open the complete collection and preview, select, or remove items. When a red count badge is visible, clicking it also opens the collection. The three delivery actions always use the **selected processed items**. They do not regenerate the current editor settings when clicked.
+![LivePhoto Studio 1.0 in English and light appearance](Assets/english-light-1.0.jpg)
 
-On each launch, previously processed items remain available but start unselected. Select them in the collection when needed. Newly processed items are automatically added to the current selection, so you can create several and act on them together; existing selections are retained during the same app session.
+*Actual screenshot of the 1.0 release, using synthetic test footage.*
 
-The red badge on **Process** counts only **items created during this app session that are still available**. It is neither the historical total nor the selection count. It hides at zero and resets on relaunch; the complete history remains in **Processed**. Manually selecting historical items does not increase this badge.
+<details>
+<summary>More screenshots: dark appearance, cropping and output settings, watermarks</summary>
 
-| Action | Result |
-| --- | --- |
-| Add to Photos | Adds the selected Live Photos or GIFs to the system Photos library, with system permission. |
-| AirDrop | Hands all selected items to one system AirDrop session; choose a recipient in the system window. |
-| Export Files | Writes paired JPG + MOV files for Live Photos and `.gif` files for GIFs. Files are placed directly in the chosen folder, without per-item folders or overwriting existing files. |
+**Simplified Chinese · Dark appearance**
 
-A four-step spotlight guide appears on first use. You can skip it or reopen it from **Settings → Show Guide**.
+![Video preview, timeline, and editing controls](Assets/editor-1.0.jpg)
+
+**Crop and custom output**
+
+![A 9:16 crop with resolution and frame-rate sliders](Assets/crop-custom-1.0.jpg)
+
+**Watermarks**
+
+![Watermark text, free positioning, size, and opacity](Assets/watermark-1.0.jpg)
+
+</details>
 
 ## Features
 
-- **Clear grouping:** Video preview and timeline on the left, separate **Editing** and **Output** groups on the right, and the **Process** action and batch controls below.
-- **Timeline and cover:** Thumbnails, a draggable and resizable clip selection, a cover marker, clip playback, and range browsing for long videos.
-- **Crop and rotate:** Original aspect ratio by default, freeform and common landscape/portrait ratios, draggable crop bounds, and left/right 90° rotation without added black borders.
-- **Watermarks:** Custom text, size, opacity, preset positions, and free positioning by dragging. Settings are remembered; watermarking is not automatically enabled after relaunch.
-- **Size and frame rate:** Original size by default, slider-based custom controls, and 4K/8K size options. Live Photo frame rates include 24, 25, 30, 50, 60 fps, and the source rate.
-- **Processed collection:** Independent media for each item, preview, multiselection, batch actions, and persistence across app restarts. Later edits do not alter existing processed items.
-- **Mac integration:** Simplified Chinese and English; system, light, or dark appearance; a top-level Finder context-menu action.
+- **Video to Live Photo or GIF:** Select a clip on the timeline, adjust its length and cover, preview, then process. Change the visible timeline range for longer videos.
+- **Crop and rotate:** Common landscape and portrait ratios, freeform crop, draggable bounds, and left/right 90° rotation without padding.
+- **Watermark and mute:** Custom text, size, opacity, preset positions, or free positioning by dragging.
+- **Original size or custom settings:** Resolution and frame-rate sliders, including 4K / 8K size options and 24 / 25 / 30 / 50 / 60 fps options for Live Photos.
+- **Create several, share together:** Click **Process** to collect clips, then add selected items to Photos, AirDrop them, or export files in a batch.
+- **Mac integration:** Drag and drop, `⌘O`, a top-level Finder context-menu action, first-use guidance, two interface languages, and light/dark appearance.
 
-## Quality and formats
+## Download and get started
+
+1. Download `LivePhotoStudio-1.0-universal.dmg` from [the latest release](https://github.com/latter404/LivePhotoStudio/releases/latest), open it, and drag the app into Applications. Quit the old version before updating.
+2. Drop in a video, click the drop area, or press `⌘O`. The default clip is three seconds; move the selection, adjust its ends, and choose a cover frame.
+3. Adjust editing and output settings on the right, then click **Process**. Keep creating clips or open **Processed** to select items.
+
+| Goal | Action |
+| --- | --- |
+| Save to the system photo library | **Add to Photos**, with system permission on first use |
+| Send to an iPhone or another supported device | **AirDrop**, then choose the recipient in the system window |
+| Save to a folder | **Export Files**: paired JPG + MOV for Live Photos, `.gif` for GIFs |
+
+Files go directly into the chosen folder, without per-item folders or overwriting existing files. Enable the app's Finder extension in System Settings to use the context-menu action.
+
+> The current app is ad-hoc signed and has not been Apple Developer ID signed or notarized. macOS may show a source-verification prompt; follow its interface and your device-management policy.
+
+## Languages and appearance
+
+| Setting | Options |
+| --- | --- |
+| Interface language | Follow System, Simplified Chinese, English |
+| Appearance | Follow System, Light, Dark |
+
+Change these from the **Settings** menu without reimporting the current video. A spotlight guide appears on first use and can be reopened from **Settings → Show Guide**.
+
+## Quality and Live Photo sharing
+
+**The default prioritizes preserving the source video.** With a supported source codec and no actual crop, watermark, or custom output settings, encoded video data is copied without re-encoding. A 90° rotation alone changes orientation metadata.
+
+**Editing the image requires a different processing path.** Cropping, watermarking, and custom output settings re-encode video. This path currently outputs SDR, converting HDR footage to standard dynamic range. GIFs have at most 256 colors and no audio.
+
+**A Live Photo combines a still image and a video.** Keep exported JPG + MOV files together; ordinary file viewers may not support LIVE playback. For an iPhone, use the app's AirDrop action, then confirm the LIVE badge and playback in Photos on the receiving device.
+
+<details>
+<summary>Quality, frame-rate, and high-resolution details</summary>
 
 | Settings | Video processing |
 | --- | --- |
@@ -50,7 +87,23 @@ The Live Photo cover is generated separately as a high-quality JPEG. The encoded
 
 4K and 8K options do not imply that every device, codec, and output mode has been tested. High-resolution encoding—and especially original-size GIF creation—can take substantial time, memory, and disk space.
 
-## Storage and cleanup
+</details>
+
+## Processed items and privacy
+
+Previous results are retained but start unselected after relaunch. The Process badge counts only items created during the current app session. Automatic cleanup is off by default; the storage location and cleanup after each delivery action can be configured separately.
+
+<details>
+<summary>How selection and the Process badge work</summary>
+
+On each launch, previously processed items remain available but start unselected. Select them in the collection when needed. Newly processed items are automatically added to the current selection, so you can create several and act on them together; existing selections are retained during the same app session.
+
+The red badge on **Process** counts only **items created during this app session that are still available**. It is neither the historical total nor the selection count. It hides at zero and resets on relaunch; the complete history remains in **Processed**. Manually selecting historical items does not increase this badge.
+
+</details>
+
+<details>
+<summary>Storage location and cleanup rules</summary>
 
 Processed items are stored under `LivePhotoStudio/Finished` in the current user's Application Support directory by default. These are independent app-managed copies that remain available after relaunch, even if the source video moves.
 
@@ -65,13 +118,26 @@ Cleanup moves only the app's processed items to the system Trash. It does not re
 
 AirDrop works differently. With its cleanup option enabled, the app asks whether the recipient received the items after the system sharing window ends. **Keep Items** is the default; cleanup occurs only if you explicitly choose **Move to Trash**. Closing the window does not prove delivery, so the question may also appear after cancelling AirDrop; choose Keep Items in that case. An explicit failure or cancellation reported by the system does not prompt or remove anything. The app never deletes processed items solely because the sharing window ended, and cannot independently confirm LIVE playback on the receiving device.
 
-## Installation
+</details>
 
-Open the DMG attached to an official release and drag `实况工坊.app` into Applications. When updating, quit the older version before replacing it. Check the installed version in **About LivePhoto Studio**. Download the installer from [the latest release](https://github.com/latter404/LivePhotoStudio/releases/latest).
+<details>
+<summary>Privacy and system permissions</summary>
 
-Current builds are **ad-hoc signed and have not been signed with an Apple Developer ID or notarized**. Other Macs may show a source-verification prompt. Follow macOS's own interface and your organization's device policy; no development tools are required to run the app. You may need to enable the Finder extension in System Settings before its context-menu action appears.
+- Media processing stays on your Mac. The app has no built-in media-upload service, account system, or telemetry service.
+- Only the **Add to Photos** and **AirDrop** actions hand selected media to the respective system service. Whether Photos syncs through iCloud is controlled by system settings.
+- Processed media, titles, and clip times are stored at the selected location. If you choose a cloud-synced folder, its provider controls that folder's synchronization.
+- A bounded local diagnostic log is written to `Library/Logs/LivePhotoStudio/Export.log` in the current user's home directory. It records processing phases, environment, and error information, but not media names, paths, image content, or watermark text. It is not uploaded automatically.
 
-## Build from source
+</details>
+
+## Development and feedback
+
+[Open an issue](https://github.com/latter404/LivePhotoStudio/issues) with the app and macOS versions, hardware, input resolution / frame rate, steps to reproduce, and a report with private information removed. A private original video is not required.
+
+All 95 automated tests passed for 1.0. See the [release notes](RELEASE_NOTES.md) for actual device-validation scope. 4K / 8K options do not mean every device, codec, or export path has been tested.
+
+<details>
+<summary>Build from source and run tests</summary>
 
 Building requires full Xcode, its macOS SDK, and Python 3. Python is used only to prepare and validate the app bundle; it is not a runtime dependency.
 
@@ -95,20 +161,11 @@ Tests use temporary directories and synthetic media. They cover pairing metadata
 
 For 1.0, all 95 automated tests passed. Local UI checks covered switching from manual Light/Dark back to Follow System, live macOS appearance changes, and the installed release’s version display. See the [release notes](RELEASE_NOTES.md) for scope and limitations.
 
-## Privacy and permissions
-
-- Media processing stays on your Mac. The app has no built-in media-upload service, account system, or telemetry service.
-- Only the **Add to Photos** and **AirDrop** actions hand selected media to the respective system service. Whether Photos syncs through iCloud is controlled by system settings.
-- Processed media, titles, and clip times are stored at the selected location. If you choose a cloud-synced folder, its provider controls that folder's synchronization.
-- A bounded local diagnostic log is written to `Library/Logs/LivePhotoStudio/Export.log` in the current user's home directory. It records processing phases, environment, and error information, but not media names, paths, image content, or watermark text. It is not uploaded automatically.
-
-## Compatibility and issue reports
-
-Preserving LIVE behavior on another device depends on the transfer path and receiving application. An AirDrop window or completion callback does not prove that the recipient saved and can play a Live Photo. Check the release notes for actual batch-transfer device validation.
-
-A successful local run does not establish compatibility with other Apple silicon models, every Intel Mac, older macOS versions, or every iPhone. When reporting an issue, include the app version, macOS version, hardware, source resolution/frame rate, settings used, and any shareable error or crash report. Remove private paths and sensitive details first. A private original video is not required to submit an issue.
+</details>
 
 ## License and credits
+
+Author: [latter404](https://github.com/latter404).
 
 This project's code is distributed under the [MIT License](LICENSE), with original copyright and license notices retained for incorporated upstream code.
 
