@@ -1,0 +1,66 @@
+# Build and distribution artifacts
+.build/
+.swiftpm/
+DerivedData/
+*.app/
+*.dmg
+*.zip
+*.xcarchive/
+*.xcresult/
+*.dSYM/
+*.o
+/work/
+/outputs/
+
+# macOS and editor state
+.DS_Store
+._*
+xcuserdata/
+*.xcuserstate
+.idea/
+.vscode/
+*~
+
+# Local configuration, signing material, and private notes
+.env
+.env.*
+!.env.example
+*.local
+*.local.*
+*.p12
+*.p8
+*.key
+*.mobileprovision
+/private/
+/local/
+
+# Generated QA evidence may include local paths. Keep QA/Tests source code.
+*.log
+/QA/**/*.json
+/QA/**/*.txt
+/QA/**/*.plist
+/QA/**/*.csv
+/QA/**/*.html
+/QA/**/*.pdf
+
+# Media and screenshots: do not commit private source videos or test outputs.
+*.[mM][oO][vV]
+*.[mM][pP]4
+*.[mM]4[vV]
+*.[gG][iI][fF]
+*.[jJ][pP][gG]
+*.[jJ][pP][eE][gG]
+*.[hH][eE][iI][cC]
+*.[hH][eE][iI][fF]
+*.[pP][nN][gG]
+*.pvt/
+
+# Deliberate app assets and reviewed documentation images stay versioned.
+!Assets/**/*.[pP][nN][gG]
+!Assets/**/*.icns
+!docs/images/**/*.[pP][nN][gG]
+!docs/images/**/*.[jJ][pP][gG]
+
+# Python packaging caches
+__pycache__/
+*.py[cod]
