@@ -11,8 +11,11 @@ import Observation
  var duration = 3.0
  var start = 0.0
  var length = 3.0
+ private(set) var durationWasCustomized = false
  var cover = 1.5
  var quarterTurns = 0
+ var speed = 1.0
+ var outputDuration:Double { length / speed }
  var watermarkEnabled = false
  var watermark = Watermark()
  init() {
@@ -72,6 +75,11 @@ import Observation
  var gifEdge = 0
  var gifFPS = 0
  var gifResult: URL?
+ var lastGIFSize:(recipe:GIFRecipe,bytes:Int64)?
+ var currentGIFRecipe:GIFRecipe? {
+ guard let url else { return nil }
+ return GIFRecipe(input:url,start:start,length:length,maxEdge:gifCustom ? gifEdge : 0,fps:gifCustom ? gifFPS : 0,quarterTurns:quarterTurns,watermark:activeWatermark,crop:activeCrop,speed:speed)
+ }
  var custom = false
  var edge = 0
  var fps = 0
@@ -105,7 +113,7 @@ import Observation
  private var previewDirectory:URL?
  func currentPreparation()->LivePreparation? {
  guard let url else { return nil }
- return LivePreparation(input:url,start:start,length:length,cover:cover,custom:custom,edge:edge,fps:fps,hevc:hevc,mute:mute,turns:quarterTurns,watermark:activeWatermark,crop:activeCrop)
+ return LivePreparation(input:url,start:start,length:length,cover:cover,custom:custom,edge:edge,fps:fps,hevc:hevc,mute:mute,turns:quarterTurns,watermark:activeWatermark,crop:activeCrop,speed:speed)
  }
  func clearLivePreview() {
  previewResult=nil
@@ -132,7 +140,7 @@ import Observation
  seek()
  }
  func centerTimeline() { visibleStart = min(max(0,start + length/2 - visibleDuration/2),max(0,duration-visibleDuration)) }
- func handle(_ u: URL) { guard !busy else { return }; if u.isFileURL { load(u) } else if u.scheme == "livephotostudio", let path=URLComponents(url:u,resolvingAgainstBaseURL:false)?.queryItems?.first(where:{$0.name=="path"})?.value { gifMode=false;load(URL(fileURLWithPath:path)) } }
+ func handle(_ u: URL) { guard !busy else { return }; if u.isFileURL { load(u) } else if ["livephotostudio","livephotostudio-test"].contains(u.scheme ?? ""), let path=URLComponents(url:u,resolvingAgainstBaseURL:false)?.queryItems?.first(where:{$0.name=="path"})?.value { gifMode=false;load(URL(fileURLWithPath:path)) } }
  var previewing = false
  private var boundaryObserver: Any?
  func choose() {
@@ -157,7 +165,7 @@ import Observation
  guard d.isFinite, d > 0, let t = try await a.loadTracks(withMediaType: .video).first else { throw EngineError.noVideoTrack }
  let rawSize = try await t.load(.naturalSize); let transform = try await t.load(.preferredTransform); let bounds=CGRect(origin:.zero,size:rawSize).applying(transform); let size=CGSize(width:abs(bounds.width),height:abs(bounds.height)); let rate = try await t.load(.nominalFrameRate)
  guard Self.validDisplaySize(size) else { throw EngineError.cannotRead("视频尺寸或方向信息无效。") }
- sourceDisplaySize = size; quarterTurns = 0; cropPreset = .original; cropRegion = .full; cropEditing=false; url = u; duration = d; timelineSpan = d > 10 ? 10 : 0; visibleStart = 0; start = 0; length = min(3, d); cover = length / 2; result = nil; savedPhotoAssetID = nil; gifResult = nil
+ sourceDisplaySize = size; quarterTurns = 0; speed = 1; durationWasCustomized = false; lastGIFSize = nil; cropPreset = .original; cropRegion = .full; cropEditing=false; url = u; duration = d; timelineSpan = d > 10 ? 10 : 0; visibleStart = 0; start = 0; length = min(3, d); cover = length / 2; result = nil; savedPhotoAssetID = nil; gifResult = nil
  player.replaceCurrentItem(with: AVPlayerItem(asset: a)); seek()
  info = "\(Int(size.width)) × \(Int(size.height)) · \(String(format: "%.2f", rate)) fps · \(String(format: "%.1f", d)) 秒"
  status = "拖动蓝色选区定位片段，拖动白色标记选择封面"
@@ -207,14 +215,68 @@ import Observation
  busy = false
  }
  }
+ private var previewGeneration = UUID()
+ private var playbackEndObserver:NSObjectProtocol?
  func preview() {
- if previewing { seek(); return }
- if let observer = boundaryObserver { player.removeTimeObserver(observer); boundaryObserver = nil }
- previewing = true
- player.seek(to: CMTime(seconds: start, preferredTimescale: 600), toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] _ in Task { @MainActor in guard let self, self.previewing else { return }; self.player.play() } }
- boundaryObserver = player.addBoundaryTimeObserver(forTimes: [NSValue(time: CMTime(seconds: start + length - 0.02, preferredTimescale: 600))], queue: .main) { [weak self] in Task { @MainActor in self?.seek() } }
+ guard url != nil,!busy else { return }
+ if previewing { seek();return }
+ seek()
+ let generation=UUID();previewGeneration=generation
+ previewing=true
+ player.isMuted=gifMode || mute
+ player.currentItem?.audioTimePitchAlgorithm = .spectral
+ player.currentItem?.forwardPlaybackEndTime=CMTime(seconds:start+length,preferredTimescale:60000)
+ playbackEndObserver=NotificationCenter.default.addObserver(forName:.AVPlayerItemDidPlayToEndTime,object:player.currentItem,queue:.main) { [weak self] _ in
+ Task { @MainActor in guard let self,self.previewGeneration == generation else { return };self.seek() }
  }
- func seek() { previewing = false; if let observer = boundaryObserver { player.removeTimeObserver(observer); boundaryObserver = nil }; player.pause(); player.seek(to: CMTime(seconds: start + cover, preferredTimescale: 600), toleranceBefore: .zero, toleranceAfter: .zero) }
+ boundaryObserver=player.addBoundaryTimeObserver(forTimes:[NSValue(time:CMTime(seconds:start+length,preferredTimescale:60000))],queue:.main) { [weak self] in
+ Task { @MainActor in guard let self,self.previewGeneration == generation else { return };self.seek() }
+ }
+ player.seek(to:CMTime(seconds:start,preferredTimescale:60000),toleranceBefore:.zero,toleranceAfter:.zero) { [weak self] finished in
+ Task { @MainActor in
+ guard let self,finished,self.previewing,self.previewGeneration == generation else { return }
+ self.player.playImmediately(atRate:Float(self.speed))
+ }
+ }
+ }
+ func seek(to position:Double? = nil) {
+ previewGeneration=UUID();previewing=false
+ if let boundaryObserver { player.removeTimeObserver(boundaryObserver);self.boundaryObserver=nil }
+ if let playbackEndObserver { NotificationCenter.default.removeObserver(playbackEndObserver);self.playbackEndObserver=nil }
+ player.pause()
+ player.currentItem?.forwardPlaybackEndTime = .invalid
+ let time=max(0,min(position ?? start+cover,max(0,duration-1.0/60000)))
+ player.seek(to:CMTime(seconds:time,preferredTimescale:60000),toleranceBefore:.zero,toleranceAfter:.zero)
+ }
+ func trimStart(to position:Double) {
+ guard !busy,position.isFinite else { return }
+ durationWasCustomized = true
+ let end=start+length,absoluteCover=start+cover
+ start=min(max(0,position),end-min(0.2,duration));length=end-start
+ cover=min(max(0,absoluteCover-start),max(0,length-1.0/60000))
+ seek(to:start)
+ }
+ func trimEnd(to position:Double) {
+ guard !busy,position.isFinite else { return }
+ durationWasCustomized = true
+ length=min(duration-start,max(min(0.2,duration),position-start))
+ cover=min(cover,max(0,length-1.0/60000))
+ seek(to:start+length-1.0/60000)
+ }
+ func setSpeed(_ value:Double) {
+ guard !busy,MediaTiming.speeds.contains(value) else { return }
+ speed=value
+ if !durationWasCustomized { resetOutputDuration() }
+ else { seek();invalidateCropResult();clearLivePreview() }
+ }
+ func resetOutputDuration() {
+ guard !busy else { return }
+ durationWasCustomized=false
+ length=min(3*speed,duration)
+ start=min(start,max(0,duration-length));cover=length/2
+ if length > visibleDuration { timelineSpan=[10.0,30.0,60.0].first(where:{$0 >= length}) ?? 0 }
+ centerTimeline();seek();invalidateCropResult();clearLivePreview()
+ }
  func export() {
  guard !busy else { return }
  if gifMode { exportGIF();return }
@@ -243,7 +305,7 @@ import Observation
  }
  func exportGIF() {
  guard !busy,let url else { return }
- let begin=start,duration=length,edge=gifCustom ? gifEdge : 0,rate=gifCustom ? gifFPS : 0,turns=quarterTurns,mark=activeWatermark,crop=activeCrop
+ let begin=start,duration=length,edge=gifCustom ? gifEdge : 0,rate=gifCustom ? gifFPS : 0,turns=quarterTurns,mark=activeWatermark,crop=activeCrop,playbackSpeed=speed
  ExportDiagnostics.begin("gif");busy=true
  Task {
  defer { busy=false }
@@ -253,10 +315,10 @@ import Observation
  gifResult=nil;result=nil;status="正在生成 GIF…"
  do {
  ExportDiagnostics.record("gif.generate")
- try await GIFExporter.run(input:url,output:target,start:begin,length:duration,maxEdge:edge,fps:rate,quarterTurns:turns,watermark:mark,crop:crop) { done,total in
+ try await GIFExporter.run(input:url,output:target,start:begin,length:duration,maxEdge:edge,fps:rate,quarterTurns:turns,watermark:mark,crop:crop,speed:playbackSpeed) { done,total in
  if done % 5 == 0 { Task { @MainActor in self.status="正在生成 GIF · \(done)/\(total) 帧" } }
  }
- gifResult=target;status="GIF 已导出 · \(String(format:"%.2f",duration)) 秒";ExportDiagnostics.record("gif.completed")
+ gifResult=target;status="GIF 已导出 · \(String(format:"%.2f",duration/playbackSpeed)) 秒";ExportDiagnostics.record("gif.completed")
  } catch { status=error.localizedDescription;ExportDiagnostics.record("gif.failed domain=\((error as NSError).domain) code=\((error as NSError).code)") }
  }
  }
@@ -300,7 +362,7 @@ import Observation
  guard let url else { throw EngineError.noVideoTrack }
  try FileManager.default.createDirectory(at:directory,withIntermediateDirectories:true)
  let output=directory.appendingPathComponent(url.deletingPathExtension().lastPathComponent+".gif")
- try await GIFExporter.run(input:url,output:output,start:start,length:length,maxEdge:gifCustom ? gifEdge : 0,fps:gifCustom ? gifFPS : 0,quarterTurns:quarterTurns,watermark:activeWatermark,crop:activeCrop)
+ try await GIFExporter.run(input:url,output:output,start:start,length:length,maxEdge:gifCustom ? gifEdge : 0,fps:gifCustom ? gifFPS : 0,quarterTurns:quarterTurns,watermark:activeWatermark,crop:activeCrop,speed:speed)
  return output
  }
  func sendGIF() {
@@ -381,6 +443,8 @@ struct ContentView: View {
  .sheet(isPresented:$model.showFinished) { FinishedView(model:model) }
  .sheet(isPresented:$model.showFinishedSettings) { FinishedSettingsView(model:model) }
  .onOpenURL { model.handle($0) }
+ .onChange(of:model.mute) { _,_ in model.player.isMuted=model.gifMode || model.mute }
+ .onChange(of:model.gifMode) { _,_ in model.player.isMuted=model.gifMode || model.mute }
  .onChange(of:model.cropRegion) { _,_ in model.invalidateCropResult() }
  .onChange(of:model.visibleStart) { _,_ in model.refreshThumbnails() }
  .onChange(of:model.timelineSpan) { _,_ in model.refreshThumbnails() }
@@ -425,7 +489,7 @@ struct ContentView: View {
  var timelineActions:some View {
  HStack(spacing:10) {
  Button(L(model.previewing ? "停止" : "预览选区"),systemImage:model.previewing ? "stop.fill" : "play.fill") { model.preview() }
- Button(L("重置为 3 秒"),systemImage:"arrow.counterclockwise") { model.length=min(3,model.duration); model.start=min(model.start,model.duration-model.length); model.cover=model.length/2; model.centerTimeline(); model.seek() }.help(L("将选区恢复为 3 秒，封面移回选区中间；不足 3 秒时选取完整视频。"))
+ Button(L("重置为 3 秒"),systemImage:"arrow.counterclockwise") { model.resetOutputDuration() }.help(L("将输出时长恢复为 3 秒；素材不足时使用可用长度。拖动选区两端可自定时长。"))
  }
  }
  var settings: some View { EditorInspector(model:model) }
@@ -445,8 +509,8 @@ struct Timeline: View {
  Color.black.opacity(0.35).frame(width:w,height:54).allowsHitTesting(false)
  RoundedRectangle(cornerRadius:5).fill(Color.accentColor.opacity(0.14)).overlay(RoundedRectangle(cornerRadius:5).stroke(Color.accentColor,lineWidth:3)).frame(width:max(3,selectedWidth),height:58).offset(x:x)
  .gesture(DragGesture().onChanged { v in if dragStart==nil { dragStart=model.start }; model.start=min(max(0,(dragStart ?? 0)+v.translation.width/w*span),model.duration-model.length); model.seek() }.onEnded { _ in dragStart=nil;model.centerTimeline() })
- handle.frame(width:10,height:58).offset(x:x-5).gesture(DragGesture().onChanged { v in if dragEnd==nil { dragEnd=model.start+model.length; dragStart=model.start }; let end=dragEnd ?? model.duration; model.start=min(max(0,(dragStart ?? 0)+v.translation.width/w*span),end-min(0.2,model.duration)); model.length=end-model.start; model.cover=min(model.cover,max(0,model.length-0.01)); model.seek() }.onEnded { _ in dragStart=nil;dragEnd=nil })
- handle.frame(width:10,height:58).offset(x:x+selectedWidth-5).gesture(DragGesture().onChanged { v in if dragEnd==nil { dragEnd=model.length }; model.length=min(model.duration-model.start,max(min(0.2,model.duration),(dragEnd ?? 0)+v.translation.width/w*span)); model.cover=min(model.cover,max(0,model.length-0.01));model.seek() }.onEnded { _ in dragEnd=nil })
+ handle.frame(width:10,height:58).offset(x:x-5).gesture(DragGesture().onChanged { v in if dragEnd==nil { dragEnd=model.start+model.length; dragStart=model.start }; model.trimStart(to:(dragStart ?? 0)+v.translation.width/w*span) }.onEnded { _ in dragStart=nil;dragEnd=nil })
+ handle.frame(width:10,height:58).offset(x:x+selectedWidth-5).gesture(DragGesture().onChanged { v in if dragEnd==nil { dragEnd=model.length }; model.trimEnd(to:model.start+(dragEnd ?? 0)+v.translation.width/w*span) }.onEnded { _ in dragEnd=nil })
  Rectangle().fill(.white).frame(width:3,height:64).overlay(Image(systemName:"diamond.fill").font(.system(size:9)).foregroundStyle(.white).offset(y:-29)).frame(width:14).contentShape(Rectangle()).offset(x:w*(model.start+model.cover-origin)/span-7)
  .gesture(DragGesture().onChanged { v in if dragStart==nil { dragStart=model.cover };model.cover=min(max(0,(dragStart ?? 0)+v.translation.width/w*span),max(0,model.length-0.02));model.seek() }.onEnded { _ in dragStart=nil })
  }.frame(width:w,height:64).clipped()

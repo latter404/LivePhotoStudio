@@ -153,7 +153,7 @@ final class EngineTests: XCTestCase {
         XCTAssertEqual(fps, 24, accuracy: 0.1)
         let duration = try await asset.load(.duration).seconds
         XCTAssertEqual(duration, 1.5, accuracy: 0.05)
-        let r = try await LivePhotoEngine.convert(input: dst, outputDir: tmp, baseName: "CUSTOM", settings: ConversionSettings())
+        let r = try await LivePhotoEngine.convert(input: dst, outputDir: tmp, baseName: "CUSTOM-PAIR", settings: ConversionSettings())
         let checks = await Verifier.verify(imageURL: r.imageURL, movURL: r.movURL)
         XCTAssertTrue(checks.allSatisfy { $0.status == .pass })
     }
@@ -178,8 +178,7 @@ final class EngineTests: XCTestCase {
         settings.trimStart = 1.25; settings.trimEnd = 4.25; settings.frameTime = 1.5
         let r = try await LivePhotoEngine.convert(input: src, outputDir: tmp, baseName: "TRIM", settings: settings, quarterTurns: 1)
         XCTAssertTrue(r.videoWasCopied)
-        XCTAssertGreaterThanOrEqual(r.clipDuration, 3)
-        XCTAssertLessThanOrEqual(r.clipDuration, 4.3)
+        XCTAssertEqual(r.clipDuration, 3, accuracy: 0.002)
         let success: Bool = await withCheckedContinuation { cont in
             PHLivePhoto.request(withResourceFileURLs: [r.imageURL, r.movURL], placeholderImage: nil, targetSize: .zero, contentMode: .aspectFit) { photo, info in
                 if (info[PHLivePhotoInfoIsDegradedKey] as? Bool) == true { return }

@@ -14,8 +14,11 @@ struct LivePreparation {
  let turns:Int
  let watermark:Watermark?
  var crop:CropRegion? = nil
- var reencodes:Bool { custom || watermark != nil || (crop != nil && crop?.isFull == false) }
+ var speed:Double = 1
+ var outputDuration:Double { length / speed }
+ var reencodes:Bool { custom || speed != 1 || watermark != nil || (crop != nil && crop?.isFull == false) }
  func generate(in directory:URL) async throws -> ConversionResult {
+ try MediaTiming.validate(speed:speed)
  if let crop {
  let r=crop.rect
  guard r.minX.isFinite,r.minY.isFinite,r.width.isFinite,r.height.isFinite,r.width>0,r.height>0,r.minX>=0,r.minY>=0,r.maxX<=1.00000001,r.maxY<=1.00000001 else { throw EngineError.cannotWrite("裁切范围无效") }
@@ -24,13 +27,13 @@ struct LivePreparation {
  try FileManager.default.createDirectory(at:directory,withIntermediateDirectories:true)
  let temp=directory.appendingPathComponent(".transcode.mov")
  defer { try? FileManager.default.removeItem(at:temp) }
- if reencodes { try await Transcode.run(input:input,output:temp,start:start,end:start+length,maxEdge:custom ? edge : 0,fps:custom ? fps : 0,hevc:custom ? hevc : true,quarterTurns:turns,watermark:watermark,crop:crop) }
+ if reencodes { try await Transcode.run(input:input,output:temp,start:start,end:start+length,maxEdge:custom ? edge : 0,fps:custom ? fps : 0,hevc:custom ? hevc : true,quarterTurns:turns,watermark:watermark,crop:crop,speed:speed) }
  var settings=ConversionSettings()
  settings.trimStart=reencodes ? 0 : start;settings.trimEnd=reencodes ? 0 : start+length
- settings.frameTime=max(0,min(cover,length-0.02));settings.dropAudio=mute
+ settings.frameTime=max(0,min(cover,length-0.00002))/speed;settings.dropAudio=mute
  let pair=try await LivePhotoEngine.convert(input:reencodes ? temp : input,outputDir:directory,baseName:"LivePhoto",settings:settings,quarterTurns:reencodes ? 0 : turns)
  guard await Verifier.verify(imageURL:pair.imageURL,movURL:pair.movURL).allSatisfy({$0.status == .pass}) else { throw EngineError.cannotWrite("生成结果未通过配对校验") }
- return pair
+ return ConversionResult(imageURL:pair.imageURL,movURL:pair.movURL,assetID:pair.assetID,baseName:pair.baseName,clipDuration:pair.clipDuration,videoWasCopied:pair.videoWasCopied && !reencodes)
  } catch { try? FileManager.default.removeItem(at:directory);throw error }
  }
  static func temporaryDirectory()->URL { FileManager.default.temporaryDirectory.appendingPathComponent("LivePhotoAction-"+UUID().uuidString,isDirectory:true) }

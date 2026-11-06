@@ -93,7 +93,7 @@ struct FinishedView:View {
  FinishedThumbnail(url:item.thumbnailURL(in:model.finishedStore.root)).frame(width:56,height:56).background(.quaternary,in:RoundedRectangle(cornerRadius:6)).clipped()
  VStack(alignment:.leading,spacing:5) {
  Text(item.title).font(.callout.weight(.medium)).lineLimit(1).truncationMode(.middle)
- Text("\(item.start,specifier:"%.2f")–\(item.start+item.duration,specifier:"%.2f") s").font(.caption).monospacedDigit().foregroundStyle(.secondary)
+ Text("\(item.start,specifier:"%.2f")–\(item.start+(item.sourceDuration ?? item.duration),specifier:"%.2f") s").font(.caption).monospacedDigit().foregroundStyle(.secondary)
  Label(item.isAvailable ? (item.kind == .gif ? "GIF" : "LIVE") : L("文件不可用"),systemImage:item.isAvailable ? (item.kind == .gif ? "photo" : "livephoto") : "exclamationmark.triangle").font(.caption2).foregroundStyle(item.isAvailable ? Color.secondary : Color.orange)
  }.frame(maxWidth:.infinity,alignment:.leading)
  }

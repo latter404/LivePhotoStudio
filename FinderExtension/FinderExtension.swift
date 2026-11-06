@@ -21,7 +21,7 @@ import UniformTypeIdentifiers
  Logger().notice("LP ACTION invoked")
  guard let url = FIFinderSyncController.default().selectedItemURLs()?.first else { Logger().error("LP no selected URL"); return }
  var target = URLComponents()
- target.scheme = "livephotostudio"; target.host = "open"
+ target.scheme = Bundle.main.bundleIdentifier == "local.livephotostudio.test.finder" ? "livephotostudio-test" : "livephotostudio"; target.host = "open"
  target.queryItems = [URLQueryItem(name:"path",value:url.path)]
  if let link = target.url { let opened = NSWorkspace.shared.open(link); Logger().notice("LP open accepted=\(opened)") }
  }

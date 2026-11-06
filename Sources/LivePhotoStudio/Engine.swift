@@ -138,14 +138,19 @@ enum LivePhotoEngine {
         let trimEnd = settings.trimEnd > 0 ? min(settings.trimEnd, duration) : duration
         guard trimStart < trimEnd else { throw EngineError.cannotRead("选区不在视频范围内") }
         let requestedDuration = trimEnd - trimStart
-        let sourceFPS = try await videoTrack.load(.nominalFrameRate)
-        let lastFrameOffset = max(0, requestedDuration - 1 / Double(max(1, sourceFPS)))
+        // The selected range may start between frame boundaries. Subtracting a
+        // full frame here can choose the penultimate source frame as the cover.
+        let lastFrameOffset = max(0, requestedDuration - 1.0 / 60000)
         let frameRel = min(max(0, settings.frameTime ?? requestedDuration / 2), lastFrameOffset)
         let stillTimeAbs = trimStart + frameRel
 
         try FileManager.default.createDirectory(at: outputDir, withIntermediateDirectories: true)
         let imageURL = outputDir.appendingPathComponent("\(baseName).\(settings.useHEIC ? "HEIC" : "JPG")")
         let movURL = outputDir.appendingPathComponent("\(baseName).MOV")
+        let sourcePath=input.standardizedFileURL.resolvingSymlinksInPath().path.lowercased()
+        guard ![imageURL,movURL].contains(where: { $0.standardizedFileURL.resolvingSymlinksInPath().path.lowercased() == sourcePath }) else {
+            throw EngineError.cannotWrite("输出路径与原视频相同，请选择其他位置。")
+        }
         try? FileManager.default.removeItem(at: imageURL)
         try? FileManager.default.removeItem(at: movURL)
 
@@ -186,14 +191,15 @@ enum LivePhotoEngine {
             if trimStart > 0.01 || trimEnd < duration - 0.01 {
                 let start = videoCompatible
                     ? snapToPreviousSync(track: videoTrack,
-                                         time: CMTime(seconds: trimStart, preferredTimescale: 600))
-                    : CMTime(seconds: trimStart, preferredTimescale: 600)
-                let end = CMTime(seconds: trimEnd, preferredTimescale: 600)
+                                         time: CMTime(seconds: trimStart, preferredTimescale: 60000))
+                    : CMTime(seconds: trimStart, preferredTimescale: 60000)
+                let end = CMTime(seconds: trimEnd, preferredTimescale: 60000)
                 range = CMTimeRange(start: start, end: end)
             }
             videoWasCopied = try await passthroughWrite(
                 asset: asset, to: movURL, assetID: assetID,
                 timeRange: range, stillTimeAbs: stillTimeAbs,
+                presentationRange: CMTimeRange(start: CMTime(seconds: trimStart, preferredTimescale: 60000), end: CMTime(seconds: trimEnd, preferredTimescale: 60000)),
                 dropAudio: settings.dropAudio)
         }
 
@@ -214,7 +220,7 @@ enum LivePhotoEngine {
         generator.appliesPreferredTrackTransform = true
         generator.requestedTimeToleranceBefore = .zero
         generator.requestedTimeToleranceAfter = .zero
-        let cmTime = CMTime(seconds: time, preferredTimescale: 600)
+        let cmTime = CMTime(seconds: time, preferredTimescale: 60000)
         let cgImage: CGImage
         do {
             (cgImage, _) = try await generator.image(at: cmTime)
@@ -248,8 +254,8 @@ enum LivePhotoEngine {
         session.outputURL = url
         session.outputFileType = .mov
         session.timeRange = CMTimeRange(
-            start: CMTime(seconds: start, preferredTimescale: 600),
-            end: CMTime(seconds: end, preferredTimescale: 600)
+            start: CMTime(seconds: start, preferredTimescale: 60000),
+            end: CMTime(seconds: end, preferredTimescale: 60000)
         )
         await session.export()
         if session.status != .completed {
@@ -366,7 +372,7 @@ enum LivePhotoEngine {
     @discardableResult
     private static func passthroughWrite(
         asset: AVAsset, to url: URL, assetID: String,
-        timeRange: CMTimeRange?, stillTimeAbs: Double, dropAudio: Bool = false
+        timeRange: CMTimeRange?, stillTimeAbs: Double, presentationRange: CMTimeRange? = nil, dropAudio: Bool = false
     ) async throws -> Bool {
         let reader: AVAssetReader
         do { reader = try AVAssetReader(asset: asset) }
@@ -377,6 +383,7 @@ enum LivePhotoEngine {
         do { writer = try AVAssetWriter(outputURL: url, fileType: .mov) }
         catch { throw EngineError.cannotWrite(error.localizedDescription) }
         writer.metadata = topLevelMetadata(assetID: assetID)
+        writer.movieTimeScale = 60000
 
         var videoCopied = true
         var pairs: [(AVAssetReaderTrackOutput, AVAssetWriterInput)] = []
@@ -423,6 +430,7 @@ enum LivePhotoEngine {
             }
             input.expectsMediaDataInRealTime = false
             if track.mediaType == .video {
+                input.mediaTimeScale = 60000
                 input.transform = try await track.load(.preferredTransform)
             }
             guard writer.canAdd(input) else { throw EngineError.cannotWrite("can't write \(track.mediaType.rawValue) track") }
@@ -444,13 +452,15 @@ enum LivePhotoEngine {
             reader.cancelReading()
             throw EngineError.cannotWrite(writer.error?.localizedDescription ?? "startWriting failed")
         }
-        let sessionStart = timeRange?.start ?? .zero
+        // Keep the decoder's keyframe preroll, but hide it from presentation.
+        // QuickTime edit lists allow exact trim without re-encoding the video.
+        let sessionStart = presentationRange?.start ?? timeRange?.start ?? .zero
         writer.startSession(atSourceTime: sessionStart)
 
         let stillGroup = AVTimedMetadataGroup(
             items: [item(keyStillImageTime, NSNumber(value: 0), "com.apple.metadata.datatype.int8")],
             timeRange: CMTimeRange(
-                start: CMTime(seconds: stillTimeAbs, preferredTimescale: 6000),
+                start: CMTime(seconds: stillTimeAbs, preferredTimescale: 60000),
                 duration: CMTime(value: 200, timescale: 3000)
             )
         )
@@ -490,6 +500,7 @@ enum LivePhotoEngine {
                 func finishIfReady() {
                     guard !checkFailure(), !finishing, metadataDone, trackDone.allSatisfy({ $0 }) else { return }
                     finishing = true
+                    if let presentationRange { writer.endSession(atSourceTime: presentationRange.end) }
                     writer.finishWriting {
                         queue.async {
                             guard !checkFailure() else { return }

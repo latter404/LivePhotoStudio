@@ -3,6 +3,10 @@ import SwiftUI
 /// All editing and output controls live together; the preview stays unobstructed.
 struct EditorInspector: View {
     @Bindable var model: Model
+    @State private var estimate: GIFSizeEstimate?
+    @State private var estimatedRecipe: GIFRecipe?
+    @State private var estimateFailed = false
+    private var estimateRecipe: GIFRecipe? { model.gifMode && !model.busy ? model.currentGIFRecipe : nil }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -17,6 +21,18 @@ struct EditorInspector: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .disabled(model.busy)
+        .task(id: estimateRecipe) {
+            estimate = nil; estimatedRecipe = nil; estimateFailed = false
+            guard let recipe = estimateRecipe, model.lastGIFSize?.recipe != recipe else { return }
+            do {
+                try await Task.sleep(for: .milliseconds(900))
+                let result = try await GIFSizeEstimator.shared.estimate(recipe)
+                try Task.checkCancellation()
+                estimate = result; estimatedRecipe = recipe
+            } catch {
+                if !Task.isCancelled { estimateFailed = true }
+            }
+        }
     }
 
     private var picture: some View {
@@ -64,6 +80,26 @@ struct EditorInspector: View {
                 }
                 .buttonStyle(.bordered).controlSize(.regular)
             }
+            HStack {
+                fieldLabel("速度", symbol: "speedometer")
+                Spacer()
+                Picker(L("播放速度"), selection: Binding(get: { model.speed }, set: { model.setSpeed($0) })) {
+                    ForEach(MediaTiming.speeds, id: \.self) { speed in
+                        Text(speed == 1 ? L("正常 · 1×") : String(format: "%g×", speed)).tag(speed)
+                    }
+                }.labelsHidden().frame(width: 116)
+            }
+            HStack {
+                fieldLabel("输出时长", symbol: "clock")
+                Spacer()
+                Text(String(format: "%.2f s", model.outputDuration)).monospacedDigit()
+            }.help(L("默认输出不超过 3 秒。拖动时间轴选区两端可自定时长；自定后切换速度会保留原视频选区。"))
+            if model.speed != 1 {
+                if !model.gifMode {
+                    Text(L("变速会高质量重新编码；HDR 转为 SDR，声音保持音调。"))
+                        .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                }
+            }
         }
         .disabled(model.url == nil)
     }
@@ -95,12 +131,18 @@ struct EditorInspector: View {
                 }
                 Text(L("256 色 · 无声音 · 最高 50 fps"))
                     .font(.caption).foregroundStyle(.secondary)
-                    .help(L("默认保留原始尺寸，帧率跟随源视频（上限 50 fps）。"))
+                    .help(L("默认保留原始尺寸，帧率随播放速度调整（上限 50 fps）。"))
+                HStack {
+                    fieldLabel(model.lastGIFSize?.recipe == model.currentGIFRecipe && model.lastGIFSize != nil ? "文件大小" : "预估大小", symbol: "doc")
+                    Spacer()
+                    Text(gifSizeText).font(.callout.monospacedDigit()).foregroundStyle(.secondary)
+                }
+                .help(L("抽样估算，仅供参考。画面变化可能影响体积，处理后显示实际大小。"))
             } else {
                 HStack(spacing: 12) {
                     fieldLabel("画质", symbol: "sparkles")
                     Picker(L("导出模式"), selection: $model.custom) {
-                        Text(L(model.activeWatermark == nil && model.activeCrop == nil ? "原画质" : "原始尺寸")).tag(false)
+                        Text(L(model.activeWatermark == nil && model.activeCrop == nil && model.speed == 1 ? "原画质" : "原始尺寸")).tag(false)
                         Text(L("自定义")).tag(true)
                     }
                     .pickerStyle(.segmented).labelsHidden().frame(maxWidth: .infinity, alignment: .trailing)
@@ -119,6 +161,17 @@ struct EditorInspector: View {
                 }
             }
         }
+    }
+
+    private var gifSizeText: String {
+        guard let recipe = model.currentGIFRecipe else { return "—" }
+        if let actual = model.lastGIFSize, actual.recipe == recipe {
+            return ByteCountFormatter.string(fromByteCount: actual.bytes, countStyle: .file)
+        }
+        if let estimate, estimatedRecipe == recipe {
+            return "≈ " + ByteCountFormatter.string(fromByteCount: estimate.bytes, countStyle: .file)
+        }
+        return L(estimateFailed ? "暂无法估算" : model.busy ? "—" : "估算中…")
     }
 
     private var watermark: some View {

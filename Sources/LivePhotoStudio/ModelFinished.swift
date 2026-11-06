@@ -35,7 +35,7 @@ extension Model {
  // Freeze every option before starting work; later edits cannot alter a finished item.
  let isGIF=gifMode,begin=start,clipLength=length,title=source.lastPathComponent
  let outputEdge=gifCustom ? gifEdge : 0,outputFPS=gifCustom ? gifFPS : 0
- let turns=quarterTurns,mark=activeWatermark,crop=activeCrop
+ let turns=quarterTurns,mark=activeWatermark,crop=activeCrop,playbackSpeed=speed,gifRecipe=currentGIFRecipe
  busy=true;seek();status="正在处理…";finishedStatus=""
  let directory=LivePreparation.temporaryDirectory()
  Task {
@@ -45,11 +45,12 @@ extension Model {
  if isGIF {
  try FileManager.default.createDirectory(at:directory,withIntermediateDirectories:true)
  let file=directory.appendingPathComponent("Animation.gif")
- try await GIFExporter.run(input:source,output:file,start:begin,length:clipLength,maxEdge:outputEdge,fps:outputFPS,quarterTurns:turns,watermark:mark,crop:crop)
- item=try await finishedStore.addGIF(file,title:title,start:begin,duration:clipLength)
+ try await GIFExporter.run(input:source,output:file,start:begin,length:clipLength,maxEdge:outputEdge,fps:outputFPS,quarterTurns:turns,watermark:mark,crop:crop,speed:playbackSpeed)
+ item=try await finishedStore.addGIF(file,title:title,start:begin,duration:max(0.02,(clipLength/playbackSpeed*100).rounded()/100),sourceDuration:clipLength)
+ if let gifRecipe { lastGIFSize=(gifRecipe,item.byteCount) }
  } else {
  let pair=try await recipe.generate(in:directory)
- item=try await finishedStore.addLive(pair,title:title,start:begin,duration:clipLength)
+ item=try await finishedStore.addLive(pair,title:title,start:begin,duration:pair.clipDuration,sourceDuration:clipLength)
  }
  finishedItems.insert(item,at:0);finishedSelection.insert(item.id);sessionProcessedIDs.insert(item.id);finishedFocus=item.id
  status="已完成处理";finishedStatus=""

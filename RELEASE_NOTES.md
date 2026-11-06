@@ -1,3 +1,35 @@
+# 实况工坊 1.1
+
+2026-11-06 · 内部构建 36
+
+## 本次更新
+
+- 时间轴两端拖动都会预览对应边界；直接封装按选区限制播放范围，减少预览与输出时长不一致。
+- 新增 0.25×、0.5×、1×、1.5×、2×、4× 播放速度，预览与输出同步。
+- 默认以最终播放时长为准，不超过 3 秒；切换半速时默认选取 1.5 秒原片。用户手动调整过选区长度后保留原片选区，不再自动缩短；「重置为 3 秒」恢复默认行为；默认选区超过当前时间轴范围时自动扩大显示范围。
+- 始终显示输出时长。变速使用高质量转码，保持声音音调；HDR 转为 SDR，不做光流补帧。
+- GIF 新增采样体积预估及处理后的实际大小。估算采用少量帧，有误差，不保证符合平台大小限制；GIF 时间精度为百分之一秒。
+- 「关于」加入可点击的 GitHub 项目链接；修复切换界面语言后外观与语言菜单仍残留旧语言的问题。
+
+## 验证范围
+
+- 108 项自动测试通过，覆盖精确剪切、首尾帧、复制码流、变速、声音、GIF 时长与体积、默认三秒、手动时长、短素材、历史存储、取消及错误恢复。
+- 本机已验证 4K / 8K 横竖屏实况、旋转封面与播放方向、变速及完整 3 秒原尺寸 8K GIF。默认时长和菜单更新未改动这轮已验证的编码引擎。
+- 实际界面检查了窄窗口、正常与半速默认三秒、手动拖动加长、文件导出及 GitHub 链接；iPhone 已收到带秒表的正常与半速实况，两张文件均为 3.000 秒，用户确认播放正常。
+- 未在朋友的 M2 Max、Intel Mac 或 macOS 14 设备上重新实机验证；通用构建和包验证不代替这些设备测试。
+
+处理结果和设置沿用旧版。运行无需额外安装 FFmpeg、Python 或 Homebrew。安装包为 Apple 芯片 / Intel 通用版本，最低 macOS 14；采用 ad-hoc 签名，尚未完成 Developer ID 签名与公证。原尺寸 8K GIF 仍可能消耗较多内存、时间和磁盘空间。
+
+## English
+
+Version **1.1 (36)** adds synchronized trim-edge previews, precise passthrough presentation ranges, 0.25×–4× playback speed, sampled GIF size estimates and actual sizes, and a clickable project link in About. It also fixes stale menu localization after changing languages.
+
+Output defaults to at most **3 seconds**, including slow motion. Before duration customization, speed changes adjust the source selection. Dragging either selection edge opts into a custom duration; subsequent speed changes preserve that source selection. **Reset to 3 s** restores the default. Output duration is always visible.
+
+108 automated tests passed. Local media checks covered landscape/portrait 4K and 8K Live Photos, rotation, speed changes, and a full 3-second original-size 8K GIF. The user confirmed normal iPhone playback of two visible-timecode Live Photos, normal speed and half speed, both measuring 3.000 seconds in their output files. M2 Max, Intel, and macOS 14 hardware acceptance is not claimed. Speed changes re-encode to SDR while preserving audio pitch, without optical-flow interpolation. GIF estimates are approximate. The universal package is ad-hoc signed and is not Developer-ID signed or notarized.
+
+---
+
 # 实况工坊 1.0
 
 2026-11-05。按首次对外正式发布整理为版本 **1.0**，内部构建号继续递增为 33。下方保留之前开发迭代时的编号与验证记录。

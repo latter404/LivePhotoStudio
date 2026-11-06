@@ -97,7 +97,7 @@ import SwiftUI
 
     @objc func showAbout() {
         if let aboutPanel { aboutPanel.makeKeyAndOrderFront(nil); return }
-        let panel = NSPanel(contentRect: NSRect(x: 0, y: 0, width: 440, height: 310), styleMask: [.titled, .closable], backing: .buffered, defer: false)
+        let panel = NSPanel(contentRect: NSRect(x: 0, y: 0, width: 440, height: 344), styleMask: [.titled, .closable], backing: .buffered, defer: false)
         panel.title = L("关于实况工坊")
         panel.isReleasedWhenClosed = false
         let content = NSStackView()
@@ -123,6 +123,16 @@ import SwiftUI
         let copyright = label("© 2026 latter404", size: 11)
         copyright.textColor = .secondaryLabelColor
         content.addArrangedSubview(copyright)
+        let project = NSButton(title: "GitHub · latter404/LivePhotoStudio", target: self, action: #selector(openProject))
+        project.isBordered = false
+        project.setAccessibilityRole(.link)
+        project.attributedTitle = NSAttributedString(string: project.title, attributes: [
+            .foregroundColor: NSColor.linkColor,
+            .underlineStyle: NSUnderlineStyle.single.rawValue,
+            .font: NSFont.systemFont(ofSize: 12)
+        ])
+        project.toolTip = "https://github.com/latter404/LivePhotoStudio"
+        content.addArrangedSubview(project)
         let licenses = NSButton(title: L("开源许可"), target: self, action: #selector(showLicenses))
         licenses.bezelStyle = .rounded
         content.addArrangedSubview(licenses)
@@ -138,6 +148,10 @@ import SwiftUI
         panel.center()
         panel.makeKeyAndOrderFront(nil)
         aboutPanel = panel
+    }
+
+    @objc private func openProject() {
+        NSWorkspace.shared.open(URL(string: "https://github.com/latter404/LivePhotoStudio")!)
     }
 
     private func label(_ text: String, size: CGFloat, weight: NSFont.Weight = .regular) -> NSTextField {
@@ -204,11 +218,13 @@ struct AppCommands: Commands {
             ForEach(AppAppearance.allCases, id: \.self) { appearance in
                 Toggle(appearance.title, isOn: Binding(get: { preferences.appearance == appearance }, set: { if $0 { preferences.appearance = appearance } }))
             }
+            .id(preferences.language.rawValue)
             Divider()
             Text(L("语言"))
             ForEach(AppLanguage.allCases, id: \.self) { language in
                 Toggle(language.title, isOn: Binding(get: { preferences.language == language }, set: { if $0 { preferences.language = language } }))
             }
+            .id(preferences.language.rawValue)
             Divider()
             Button(L("存储与清理…")) {
                 openWindow(id: "main")

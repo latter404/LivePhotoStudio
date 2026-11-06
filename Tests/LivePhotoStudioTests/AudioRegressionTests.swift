@@ -69,6 +69,30 @@ final class AudioRegressionTests: XCTestCase {
         XCTAssertThrowsError(try LivePhotoEngine.reencodeAudioSettings(formatDescription: format))
     }
 
+    func testSpeedPreservesEnabledAudioAndMuteStillRemovesIt() async throws {
+        let source=directory.appendingPathComponent("speed-audio.mov")
+        try await makeMovie(at:source,stereoAAC:true,alternateEnabled:false)
+        for (speed,mute) in [(1.0,false),(0.5,false),(2.0,false),(0.5,true)] {
+            let recipe=LivePreparation(input:source,start:0.12,length:0.72,cover:0.36,custom:false,edge:0,fps:0,hevc:true,mute:mute,turns:1,watermark:nil,speed:speed)
+            let result=try await recipe.generate(in:directory.appendingPathComponent("speed-\(speed)-\(mute)"))
+            let asset=AVURLAsset(url:result.movURL)
+            let tracks=try await asset.loadTracks(withMediaType:.audio)
+            XCTAssertEqual(tracks.count,mute ? 0 : 1,"Disabled spatial alternatives must stay excluded")
+            XCTAssertEqual(result.clipDuration,0.72/speed,accuracy:0.04)
+            if let audio=tracks.first {
+                let descriptions=try await audio.load(.formatDescriptions)
+                let format=try XCTUnwrap(descriptions.first)
+                let asbd=try XCTUnwrap(CMAudioFormatDescriptionGetStreamBasicDescription(format)).pointee
+                XCTAssertEqual(asbd.mChannelsPerFrame,2)
+                let range=try await audio.load(.timeRange)
+                XCTAssertEqual(range.start.seconds,0,accuracy:0.03)
+                XCTAssertEqual(range.duration.seconds,result.clipDuration,accuracy:0.04)
+                let bytes=try await audioBytes(url:result.movURL,track:audio)
+                XCTAssertFalse(bytes.isEmpty)
+            }
+        }
+    }
+
     private func audioBytes(url: URL, track: AVAssetTrack) async throws -> Data {
         let reader = try AVAssetReader(asset: AVURLAsset(url: url))
         // AVAssetReaderTrackOutput requires a track belonging to its exact asset instance.

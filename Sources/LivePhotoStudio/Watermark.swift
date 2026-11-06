@@ -2,7 +2,7 @@ import AppKit
 import AVFoundation
 import CoreImage
 
-struct Watermark: Sendable {
+struct Watermark: Sendable, Equatable {
  var text = ""
  var position = 0
  // For free placement, 0...1 spans the available space around the stamp.

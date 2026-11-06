@@ -10,29 +10,37 @@
 
 A native Mac app that processes videos locally. No account or separate FFmpeg, Python, Homebrew, or Xcode installation is needed to use it.
 
-![LivePhoto Studio 1.0 in English and light appearance](Assets/english-light-1.0.jpg)
+![LivePhoto Studio 1.1 in English and light appearance](Assets/english-light-1.1.png)
 
-*Actual screenshot of the 1.0 release, using synthetic test footage.*
+*Actual screenshot of version 1.1, using synthetic test footage.*
 
 ## More screenshots
 
 ### Simplified Chinese · Dark appearance
 
-![Video preview, timeline, and editing controls](Assets/editor-1.0.jpg)
+![Video preview, timeline, and editing controls](Assets/editor-1.1.png)
 
 ### Crop and custom output
 
-![A 9:16 crop with resolution and frame-rate sliders](Assets/crop-custom-1.0.jpg)
+![A 1:1 crop with resolution and frame-rate sliders](Assets/crop-custom-1.1.png)
 
 ### Watermarks
 
-![Watermark text, free positioning, size, and opacity](Assets/watermark-1.0.jpg)
+![Watermark text, free positioning, size, and opacity](Assets/watermark-1.1.png)
 
 
+
+### GIF size and playback speed
+
+![Sampled GIF size estimate and playback speed](Assets/gif-estimate-1.1.png)
+
+![Actual GIF size after processing](Assets/gif-actual-1.1.png)
 
 ## Features
 
 - **Video to Live Photo or GIF:** Select a clip on the timeline, adjust its length and cover, preview, then process. Change the visible timeline range for longer videos.
+- **Speed and duration:** Choose 0.25×, 0.5×, 1×, 1.5×, 2×, or 4×. Output defaults to at most 3 seconds, including slow motion. Drag either selection edge for a custom duration; output duration stays visible.
+- **GIF size estimates:** See a sampled estimate before processing and the actual size afterward. Estimates are not a file-size guarantee.
 - **Crop and rotate:** Common landscape and portrait ratios, freeform crop, draggable bounds, and left/right 90° rotation without padding.
 - **Watermark and mute:** Custom text, size, opacity, preset positions, or free positioning by dragging.
 - **Original size or custom settings:** Resolution and frame-rate sliders, including 4K / 8K size options and 24 / 25 / 30 / 50 / 60 fps options for Live Photos.
@@ -41,7 +49,7 @@ A native Mac app that processes videos locally. No account or separate FFmpeg, P
 
 ## Download and get started
 
-1. Download `LivePhotoStudio-1.0-universal.dmg` from [the latest release](https://github.com/latter404/LivePhotoStudio/releases/latest), open it, and drag the app into Applications. Quit the old version before updating.
+1. Download `LivePhotoStudio-1.1-universal.dmg` from [the latest release](https://github.com/latter404/LivePhotoStudio/releases/latest), open it, and drag the app into Applications. Quit the old version before updating.
 2. Drop in a video, click the drop area, or press `⌘O`. The default clip is three seconds; move the selection, adjust its ends, and choose a cover frame.
 3. Adjust editing and output settings on the right, then click **Process**. Keep creating clips or open **Processed** to select items.
 
@@ -54,6 +62,8 @@ A native Mac app that processes videos locally. No account or separate FFmpeg, P
 Files go directly into the chosen folder, without per-item folders or overwriting existing files. Enable the app's Finder extension in System Settings to use the context-menu action.
 
 > The current app is ad-hoc signed and has not been Apple Developer ID signed or notarized. macOS may show a source-verification prompt; follow its interface and your device-management policy.
+
+Output defaults to at most 3 seconds. Before you customize the duration, speed changes adjust the source selection to keep that default. Drag either edge to choose a different duration; subsequent speed changes preserve that source selection. **Reset to 3 s** restores the default.
 
 ## Languages and appearance
 
@@ -68,7 +78,7 @@ Change these from the **Settings** menu without reimporting the current video. A
 
 **The default prioritizes preserving the source video.** With a supported source codec and no actual crop, watermark, or custom output settings, encoded video data is copied without re-encoding. A 90° rotation alone changes orientation metadata.
 
-**Editing the image requires a different processing path.** Cropping, watermarking, and custom output settings re-encode video. This path currently outputs SDR, converting HDR footage to standard dynamic range. GIFs have at most 256 colors and no audio.
+**Editing the image requires a different processing path.** Cropping, watermarking, speed changes, and custom output settings re-encode video. This path currently outputs SDR, converting HDR footage to standard dynamic range. GIFs have at most 256 colors and no audio.
 
 **A Live Photo combines a still image and a video.** Keep exported JPG + MOV files together; ordinary file viewers may not support LIVE playback. For an iPhone, use the app's AirDrop action, then confirm the LIVE badge and playback in Photos on the receiving device.
 
@@ -77,12 +87,12 @@ Change these from the **Settings** menu without reimporting the current video. A
 
 | Settings | Video processing |
 | --- | --- |
-| Original quality, with no watermark, actual crop, or custom output settings | Copies encoded video data without re-encoding when the source codec supports passthrough. |
+| Original quality, with no watermark, actual crop, speed change, or custom output settings | Copies encoded video data without re-encoding when the source codec supports passthrough. |
 | Only a 90° rotation | Changes orientation metadata; rotation alone does not re-encode the video or add borders. |
-| Watermark, actual crop, or custom size/frame rate | Re-encodes video. The current processing path outputs SDR, converting HDR footage to standard dynamic range; this is not guaranteed lossless. |
+| Watermark, actual crop, speed change, or custom size/frame rate | Re-encodes video. The current processing path outputs SDR, converting HDR footage to standard dynamic range; this is not guaranteed lossless. |
 | GIF | Original size and source frame rate by default, capped at 50 fps; at most 256 colors, with no audio. |
 
-The Live Photo cover is generated separately as a high-quality JPEG. The encoded-video preservation statement does not mean the cover is lossless. Passthrough clips may start at an earlier keyframe and run slightly longer than the requested selection. Custom size settings do not upscale smaller footage. Video encoding requires even dimensions, which may trim the crop inward by one pixel.
+The Live Photo cover is generated separately as a high-quality JPEG. The encoded-video preservation statement does not mean the cover is lossless. Passthrough retains any decoder preroll but constrains presentation to the selected range. Preview and output use the same range. Speed changes preserve audio pitch without optical-flow interpolation. Default output frame rate follows speed, capped at 240 fps (50 fps for GIF). GIF duration is rounded to centiseconds. Custom size settings do not upscale smaller footage. Video encoding requires even dimensions, which may trim the crop inward by one pixel.
 
 4K and 8K options do not imply that every device, codec, and output mode has been tested. High-resolution encoding—and especially original-size GIF creation—can take substantial time, memory, and disk space.
 
@@ -133,7 +143,7 @@ AirDrop works differently. With its cleanup option enabled, the app asks whether
 
 [Open an issue](https://github.com/latter404/LivePhotoStudio/issues) with the app and macOS versions, hardware, input resolution / frame rate, steps to reproduce, and a report with private information removed. A private original video is not required.
 
-All 95 automated tests passed for 1.0. See the [release notes](RELEASE_NOTES.md) for actual device-validation scope. 4K / 8K options do not mean every device, codec, or export path has been tested.
+All 108 automated tests passed for 1.1. See the [release notes](RELEASE_NOTES.md) for actual device-validation scope. 4K / 8K options do not mean every device, codec, or export path has been tested.
 
 <details>
 <summary>Build from source and run tests</summary>
@@ -158,7 +168,7 @@ swift test
 
 Tests use temporary directories and synthetic media. They cover pairing metadata, rotation and cropping, watermark placement, processed-item persistence, batch sharing preparation, file export, and failure cleanup. Their source is in [Tests](Tests/LivePhotoStudioTests). Passing tests do not establish installation, UI behavior, Photos library writes, or iPhone receipt on every device.
 
-For 1.0, all 95 automated tests passed. Local UI checks covered switching from manual Light/Dark back to Follow System, live macOS appearance changes, and the installed release’s version display. See the [release notes](RELEASE_NOTES.md) for scope and limitations.
+For 1.1, all 108 automated tests passed. Local UI checks covered language-menu switching, narrow windows, real file export, and the GitHub link in About. See the [release notes](RELEASE_NOTES.md) for scope and limitations.
 
 </details>
 

@@ -16,6 +16,7 @@ struct FinishedItem: Codable, Identifiable, Sendable {
     let duration: Double
     let byteCount: Int64
     let assetID: String?
+    var sourceDuration: Double? = nil
     var videoWasCopied = false
     var mediaChecksums: [String: String] = [:]
     var mediaSizes: [String: Int64] = [:]
@@ -23,7 +24,7 @@ struct FinishedItem: Codable, Identifiable, Sendable {
     // never committed as the permanent state of the finished item.
     var isAvailable = true
     private enum CodingKeys: String, CodingKey {
-        case id, title, kind, createdAt, start, duration, byteCount, assetID, videoWasCopied, mediaChecksums, mediaSizes
+        case id, title, kind, createdAt, start, duration, byteCount, assetID, sourceDuration, videoWasCopied, mediaChecksums, mediaSizes
     }
 
     func directory(in root: URL) -> URL { root.appendingPathComponent(id.uuidString, isDirectory: true) }
@@ -48,7 +49,7 @@ actor FinishedStore {
 
     nonisolated static var defaultRoot: URL {
         FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("LivePhotoStudio/Finished", isDirectory: true)
+            .appendingPathComponent(Bundle.main.bundleIdentifier == "local.livephotostudio.test" ? "LivePhotoStudio/Testing/Finished" : "LivePhotoStudio/Finished", isDirectory: true)
     }
 
     /// URL spelling is not directory identity: symlinks and case-insensitive
@@ -204,19 +205,19 @@ actor FinishedStore {
         }
     }
 
-    func addLive(_ pair: ConversionResult, title: String, start: Double, duration: Double) async throws -> FinishedItem {
+    func addLive(_ pair: ConversionResult, title: String, start: Double, duration: Double, sourceDuration: Double? = nil) async throws -> FinishedItem {
         guard validTiming(start: start, duration: duration), !pair.assetID.isEmpty else { throw invalidItem() }
         guard try regularFileSize(pair.imageURL) > 0, try regularFileSize(pair.movURL) > 0 else { throw invalidItem() }
         let id = UUID()
         return try await commit(id: id, title: title, kind: .livePhoto, start: start, duration: duration,
-                          assetID: pair.assetID, videoWasCopied: pair.videoWasCopied,
+                          assetID: pair.assetID, videoWasCopied: pair.videoWasCopied, sourceDuration: sourceDuration,
                           sources: [(pair.imageURL, "LivePhoto.JPG"), (pair.movURL, "LivePhoto.MOV")])
     }
 
-    func addGIF(_ file: URL, title: String, start: Double, duration: Double) async throws -> FinishedItem {
+    func addGIF(_ file: URL, title: String, start: Double, duration: Double, sourceDuration: Double? = nil) async throws -> FinishedItem {
         guard validTiming(start: start, duration: duration), try regularFileSize(file) > 0 else { throw invalidItem() }
         return try await commit(id: UUID(), title: title, kind: .gif, start: start, duration: duration,
-                          assetID: nil, videoWasCopied: false,
+                          assetID: nil, videoWasCopied: false, sourceDuration: sourceDuration,
                           sources: [(file, "Animation.gif")])
     }
 
@@ -233,7 +234,7 @@ actor FinishedStore {
     }
 
     private func commit(id: UUID, title: String, kind: FinishedItem.Kind, start: Double, duration: Double,
-                        assetID: String?, videoWasCopied: Bool, sources: [(URL, String)]) async throws -> FinishedItem {
+                        assetID: String?, videoWasCopied: Bool, sourceDuration: Double? = nil, sources: [(URL, String)]) async throws -> FinishedItem {
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
         let staging = root.appendingPathComponent("." + id.uuidString + ".inprogress", isDirectory: true)
         let destination = root.appendingPathComponent(id.uuidString, isDirectory: true)
@@ -270,7 +271,7 @@ actor FinishedStore {
         let cleanedTitle = String(title.trimmingCharacters(in: .whitespacesAndNewlines).prefix(512))
         let item = FinishedItem(id: id, title: cleanedTitle, kind: kind, createdAt: Date(), start: start,
                                 duration: duration, byteCount: byteCount, assetID: assetID,
-                                videoWasCopied: videoWasCopied, mediaChecksums: checksums, mediaSizes: sizes)
+                                sourceDuration: sourceDuration, videoWasCopied: videoWasCopied, mediaChecksums: checksums, mediaSizes: sizes)
         guard valid(item) else { throw invalidItem() }
         try JSONEncoder().encode(item).write(to: staging.appendingPathComponent("item.json"), options: .atomic)
         try FileManager.default.moveItem(at: staging, to: destination)
@@ -299,6 +300,7 @@ actor FinishedStore {
     private func valid(_ item: FinishedItem) -> Bool {
         validTiming(start: item.start, duration: item.duration) && item.byteCount > 0 && item.title.count <= 512 &&
             item.createdAt.timeIntervalSinceReferenceDate.isFinite &&
+            (item.sourceDuration == nil || validTiming(start:item.start,duration:item.sourceDuration!)) &&
             (item.kind == .gif || !(item.assetID ?? "").isEmpty)
     }
     private func isPlainDirectory(_ url: URL) throws -> Bool {

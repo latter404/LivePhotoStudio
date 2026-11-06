@@ -3,13 +3,19 @@ import Foundation
 import CoreImage
 
 enum Transcode {
- static func run(input: URL, output: URL, start: Double, end: Double, maxEdge: Int, fps: Int, hevc: Bool, quarterTurns: Int = 0, watermark: Watermark? = nil, crop: CropRegion? = nil) async throws {
+ static func run(input: URL, output: URL, start: Double, end: Double, maxEdge: Int, fps: Int, hevc: Bool, quarterTurns: Int = 0, watermark: Watermark? = nil, crop: CropRegion? = nil, speed: Double = 1) async throws {
+ try MediaTiming.validate(speed:speed)
  guard start.isFinite,end.isFinite,start>=0,end>start,maxEdge>=0,maxEdge<=32768,fps>=0,fps<=240 else { throw EngineError.cannotWrite("导出时间范围、尺寸或帧率无效") }
  try Task.checkCancellation()
- let asset = try await Rotation.asset(url: input, turns: quarterTurns)
- let duration=try await asset.load(.duration).seconds
+ let original = try await Rotation.asset(url: input, turns: quarterTurns)
+ let duration=try await original.load(.duration).seconds
  guard duration.isFinite,duration>0,start<duration else { throw EngineError.cannotRead("视频时间范围无效") }
- let end=min(end,duration)
+ let selectedEnd=min(end,duration)
+ guard let originalTrack=try await original.loadTracks(withMediaType:.video).first else { throw EngineError.noVideoTrack }
+ let sourceFPS=try await originalTrack.load(.nominalFrameRate)
+ let asset = speed == 1 ? original : try await MediaTiming.retimed(original,start:start,end:selectedEnd,speed:speed)
+ let end = speed == 1 ? selectedEnd : (selectedEnd-start)/speed
+ let start = speed == 1 ? start : 0
  guard let track = try await asset.loadTracks(withMediaType: .video).first else { throw EngineError.noVideoTrack }
  let size = try await track.load(.naturalSize)
  let transform = try await track.load(.preferredTransform)
@@ -32,9 +38,8 @@ enum Transcode {
  let composition = AVMutableVideoComposition()
  composition.renderSize = CGSize(width: width, height: height)
  composition.sourceTrackIDForFrameTiming = kCMPersistentTrackID_Invalid
- let sourceFPS = try await track.load(.nominalFrameRate)
  guard sourceFPS.isFinite,sourceFPS>0 else { throw EngineError.cannotRead("视频帧率无效") }
- composition.frameDuration = fps == 0 ? CMTime(seconds: 1 / Double(max(1, sourceFPS)), preferredTimescale: 60000) : CMTime(value: 1, timescale: Int32(fps))
+ composition.frameDuration = fps == 0 ? CMTime(seconds: 1 / min(240,max(1,Double(sourceFPS)*speed)), preferredTimescale: 60000) : CMTime(value: 1, timescale: Int32(fps))
  composition.colorPrimaries = AVVideoColorPrimaries_ITU_R_709_2
  composition.colorTransferFunction = AVVideoTransferFunction_ITU_R_709_2
  composition.colorYCbCrMatrix = AVVideoYCbCrMatrix_ITU_R_709_2
@@ -68,6 +73,7 @@ enum Transcode {
  try Task.checkCancellation()
  guard let session = AVAssetExportSession(asset: asset, presetName: preset) else { throw EngineError.cannotWrite("无法创建转码任务") }
  session.videoComposition = finalComposition
+ session.audioTimePitchAlgorithm = .spectral
  session.outputURL = output; session.outputFileType = .mov
  session.timeRange = CMTimeRange(start: CMTime(seconds: start, preferredTimescale: 60000), end: CMTime(seconds: end, preferredTimescale: 60000))
  await session.export()

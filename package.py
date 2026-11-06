@@ -10,10 +10,17 @@ args=parser.parse_args()
 if args.test is not None and (not args.test.strip() or len(args.test.strip())>40):
     parser.error('Test purpose must contain 1–40 characters.')
 app=Path(args.contents)
-base=dict(CFBundleDevelopmentRegion='zh-Hans',CFBundleLocalizations=['zh-Hans','en'],CFBundleVersion='33',CFBundleShortVersionString='1.0',LSMinimumSystemVersion='14.0')
+base=dict(CFBundleDevelopmentRegion='zh-Hans',CFBundleLocalizations=['zh-Hans','en'],CFBundleVersion='36',CFBundleShortVersionString='1.1',LSMinimumSystemVersion='14.0')
 test_suffix=f" · 测试版 {base['CFBundleShortVersionString']} · {args.test.strip()}" if args.test else ''
 main=dict(base,CFBundleIdentifier='local.livephotostudio.app',CFBundleName='实况工坊'+test_suffix,CFBundleDisplayName='实况工坊'+test_suffix,CFBundleExecutable='LivePhotoStudio',CFBundleIconFile='AppIcon',CFBundlePackageType='APPL',NSPrincipalClass='NSApplication',NSHumanReadableCopyright='© 2026 latter404',CFBundleURLTypes=[dict(CFBundleURLName='livephotostudio.open',CFBundleURLSchemes=['livephotostudio'])],NSPhotoLibraryAddUsageDescription='将你生成的实况照片或 GIF 添加到照片图库。',CFBundleDocumentTypes=[dict(CFBundleTypeName='Video',CFBundleTypeRole='Viewer',LSHandlerRank='Alternate',LSItemContentTypes=['public.movie'])])
 ext=dict(base,CFBundleIdentifier='local.livephotostudio.app.finder',CFBundleName='实况工坊 Finder',CFBundleExecutable='LivePhotoFinder',CFBundlePackageType='XPC!',NSExtension=dict(NSExtensionPointIdentifier='com.apple.FinderSync',NSExtensionPrincipalClass='LivePhotoFinder'))
+if args.test:
+    # Independent settings, history, and URL scheme; never claim the release's file associations.
+    main['CFBundleIdentifier'] = 'local.livephotostudio.test'
+    ext['CFBundleIdentifier'] = main['CFBundleIdentifier'] + '.finder'
+    ext['CFBundleName'] += test_suffix
+    main['CFBundleURLTypes'][0]['CFBundleURLSchemes'] = ['livephotostudio-test']
+    main.pop('CFBundleDocumentTypes', None)
 (app/'Info.plist').write_bytes(plistlib.dumps(main))
 (app/'PlugIns/LivePhotoFinder.appex/Contents/Info.plist').write_bytes(plistlib.dumps(ext))
 
@@ -35,7 +42,8 @@ for language, values in localized.items():
         values['CFBundleName']+=suffix
     strings_file(app/'Resources'/f'{language}.lproj'/'InfoPlist.strings',values)
     finder_name='实况工坊 Finder' if language=='zh-Hans' else 'LivePhoto Studio Finder'
+    if args.test: finder_name += suffix
     resources=app/'PlugIns/LivePhotoFinder.appex/Contents/Resources'/f'{language}.lproj'
     strings_file(resources/'InfoPlist.strings',dict(CFBundleDisplayName=finder_name,CFBundleName=finder_name))
-    strings_file(resources/'Localizable.strings',{'Convert to Live Photo':'转为实况照片' if language=='zh-Hans' else 'Convert to Live Photo'})
+    strings_file(resources/'Localizable.strings',{'Convert to Live Photo':('转为实况照片' if language=='zh-Hans' else 'Convert to Live Photo') + (('（测试版）' if language=='zh-Hans' else ' (Test)') if args.test else '')})
 Path('FinderExtension/entitlements.plist').write_bytes(plistlib.dumps({'com.apple.security.app-sandbox':True,'com.apple.security.files.user-selected.read-only':True}))
