@@ -2,8 +2,6 @@
 
 <h1 align="center">实况工坊 · LivePhoto Studio</h1>
 
-<p align="center">把视频里喜欢的几秒，变成实况照片或 GIF。</p>
-
 <p align="center"><a href="https://github.com/latter404/LivePhotoStudio/releases/latest">下载安装</a> · <a href="README.en.md">English</a> · <a href="RELEASE_NOTES.md">版本说明</a> · <a href="https://github.com/latter404/LivePhotoStudio/issues">反馈问题</a></p>
 
 **macOS 14+ · Apple 芯片 / Intel · 简体中文 / English · MIT 开源**

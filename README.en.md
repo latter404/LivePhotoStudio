@@ -2,8 +2,6 @@
 
 <h1 align="center">LivePhoto Studio · 实况工坊</h1>
 
-<p align="center">Turn a few favorite seconds into a Live Photo or GIF.</p>
-
 <p align="center"><a href="https://github.com/latter404/LivePhotoStudio/releases/latest">Download</a> · <a href="README.md">简体中文</a> · <a href="RELEASE_NOTES.md">Release notes</a> · <a href="https://github.com/latter404/LivePhotoStudio/issues">Report an issue</a></p>
 
 **macOS 14+ · Apple silicon / Intel · English / Simplified Chinese · MIT licensed**
