@@ -10,31 +10,15 @@
 
 原生 Mac 应用，在本机完成视频处理。无需账号，也不用额外安装 FFmpeg、Python、Homebrew 或 Xcode 即可使用。
 
-![实况工坊 1.1 主界面：左侧视频与时间轴，右侧编辑、输出和批量操作](Assets/editor-1.1.png)
+## 1.7 界面展示
 
-*1.1 实机截图，使用合成测试视频。*
+![实况工坊 1.7 主界面：时间轴、画面设置与输出设置](Assets/editor-1.7-public.png)
 
-## 更多功能展示
+*专用合成演示素材，包含应用自带演示水印。*
 
-### 比例裁切与自定义输出
+![实况工坊 1.7 输出设置：实况照片、GIF、原始尺寸与体积预估](Assets/output-1.7-public.png)
 
-![1:1 裁切选框及分辨率、帧率滑条](Assets/crop-custom-1.1.png)
-
-### 自定义水印
-
-![水印文字、自由位置、大小和透明度](Assets/watermark-1.1.png)
-
-### English · 浅色外观
-
-![LivePhoto Studio 英文浅色界面](Assets/english-light-1.1.png)
-
-
-
-### GIF 体积与变速
-
-![处理前的 GIF 大小预估与播放速度](Assets/gif-estimate-1.1.png)
-
-![GIF 处理后的实际文件大小](Assets/gif-actual-1.1.png)
+![实况工坊 1.7 已处理列表：批量选择、预览与导出](Assets/processed-1.7-public.png)
 
 ## 能做什么
 
@@ -166,7 +150,7 @@ swift test
 
 测试使用临时目录和合成媒体，覆盖配对元数据、旋转和裁切、水印位置、处理结果保存、批量分享准备、文件导出及失败清理等，源码位于 [Tests](Tests/LivePhotoStudioTests)。自动测试通过不等于完成了所有设备的安装、UI、照片图库和 iPhone 接收验收。
 
-当前 1.7 源码包含 117 项自动测试，另有 1 项需要外部高分辨率素材的可选测试未运行。具体发布说明与已知限制见[发布说明](RELEASE_NOTES.md)。
+具体发布说明与已知限制见[发布说明](RELEASE_NOTES.md)。
 
 </details>
 

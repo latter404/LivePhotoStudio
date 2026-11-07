@@ -10,31 +10,15 @@
 
 A native Mac app that processes videos locally. No account or separate FFmpeg, Python, Homebrew, or Xcode installation is needed to use it.
 
-![LivePhoto Studio 1.1 in English and light appearance](Assets/english-light-1.1.png)
+## 1.7 screenshots
 
-*Actual screenshot of version 1.1, using synthetic test footage.*
+![LivePhoto Studio 1.7 editor with timeline, editing settings, and output settings](Assets/editor-1.7-public.png)
 
-## More screenshots
+*Dedicated synthetic demo material with the app's own demo watermark.*
 
-### Simplified Chinese · Dark appearance
+![LivePhoto Studio 1.7 output settings for Live Photos, GIFs, original size, and estimates](Assets/output-1.7-public.png)
 
-![Video preview, timeline, and editing controls](Assets/editor-1.1.png)
-
-### Crop and custom output
-
-![A 1:1 crop with resolution and frame-rate sliders](Assets/crop-custom-1.1.png)
-
-### Watermarks
-
-![Watermark text, free positioning, size, and opacity](Assets/watermark-1.1.png)
-
-
-
-### GIF size and playback speed
-
-![Sampled GIF size estimate and playback speed](Assets/gif-estimate-1.1.png)
-
-![Actual GIF size after processing](Assets/gif-actual-1.1.png)
+![LivePhoto Studio 1.7 processed list with batch selection, preview, and export](Assets/processed-1.7-public.png)
 
 ## Features
 
@@ -170,7 +154,7 @@ swift test
 
 Tests use temporary directories and synthetic media. They cover pairing metadata, rotation and cropping, watermark placement, processed-item persistence, batch sharing preparation, file export, and failure cleanup. Their source is in [Tests](Tests/LivePhotoStudioTests). Passing tests do not establish installation, UI behavior, Photos library writes, or iPhone receipt on every device.
 
-The 1.7 source includes 117 automated tests; one optional test requiring an external high-resolution fixture was not run. See the [release notes](RELEASE_NOTES.md) for public release details and limitations.
+See the [release notes](RELEASE_NOTES.md) for public release details and limitations.
 
 </details>
 
