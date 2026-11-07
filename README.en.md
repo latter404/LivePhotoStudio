@@ -170,7 +170,7 @@ swift test
 
 Tests use temporary directories and synthetic media. They cover pairing metadata, rotation and cropping, watermark placement, processed-item persistence, batch sharing preparation, file export, and failure cleanup. Their source is in [Tests](Tests/LivePhotoStudioTests). Passing tests do not establish installation, UI behavior, Photos library writes, or iPhone receipt on every device.
 
-For 1.7, 117 automated tests passed, with one optional external high-resolution fixture skipped. Local UI checks covered language-menu switching, narrow windows, real file export, and the GitHub link in About. See the [release notes](RELEASE_NOTES.md) for scope and limitations.
+The 1.7 source includes 117 automated tests; one optional test requiring an external high-resolution fixture was not run. See the [release notes](RELEASE_NOTES.md) for public release details and limitations.
 
 </details>
 
