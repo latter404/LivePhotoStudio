@@ -51,7 +51,7 @@ A native Mac app that processes videos locally. No account or separate FFmpeg, P
 
 ## Download and get started
 
-1. Download `LivePhotoStudio-1.1-universal.dmg` from [the latest release](https://github.com/latter404/LivePhotoStudio/releases/latest), open it, and drag the app into Applications. Quit the old version before updating.
+1. Download the current installer from [the latest release](https://github.com/latter404/LivePhotoStudio/releases/latest), open it, and drag the app into Applications. Quit the old version before updating.
 2. Drop in a video, click the drop area, or press `⌘O`. The default clip is three seconds; move the selection, adjust its ends, and choose a cover frame.
 3. Adjust editing and output settings on the right, then click **Process**. Keep creating clips or open **Processed** to select items.
 
@@ -145,7 +145,7 @@ AirDrop works differently. With its cleanup option enabled, the app asks whether
 
 [Open an issue](https://github.com/latter404/LivePhotoStudio/issues) with the app and macOS versions, hardware, input resolution / frame rate, steps to reproduce, and a report with private information removed. A private original video is not required.
 
-All 108 automated tests passed for 1.1. See the [release notes](RELEASE_NOTES.md) for actual device-validation scope. 4K / 8K options do not mean every device, codec, or export path has been tested.
+The current 1.7 source passed 117 automated tests, with one optional external high-resolution fixture skipped. See the [release notes](RELEASE_NOTES.md) for actual device-validation scope. 4K / 8K options do not mean every device, codec, or export path has been tested.
 
 <details>
 <summary>Build from source and run tests</summary>
@@ -170,7 +170,7 @@ swift test
 
 Tests use temporary directories and synthetic media. They cover pairing metadata, rotation and cropping, watermark placement, processed-item persistence, batch sharing preparation, file export, and failure cleanup. Their source is in [Tests](Tests/LivePhotoStudioTests). Passing tests do not establish installation, UI behavior, Photos library writes, or iPhone receipt on every device.
 
-For 1.1, all 108 automated tests passed. Local UI checks covered language-menu switching, narrow windows, real file export, and the GitHub link in About. See the [release notes](RELEASE_NOTES.md) for scope and limitations.
+For 1.7, 117 automated tests passed, with one optional external high-resolution fixture skipped. Local UI checks covered language-menu switching, narrow windows, real file export, and the GitHub link in About. See the [release notes](RELEASE_NOTES.md) for scope and limitations.
 
 </details>
 
