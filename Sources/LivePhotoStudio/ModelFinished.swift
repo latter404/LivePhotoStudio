@@ -32,6 +32,10 @@ extension Model {
  }
  func processCurrent() {
  guard !busy,finishedLoaded,let source=url,let recipe=currentPreparation() else { return }
+ guard !(watermarkEnabled && watermark.imageMode && !watermark.imageAvailable) else {
+  status=L("图片水印文件不可用，请重新选择图片")
+  return
+ }
  // Freeze every option before starting work; later edits cannot alter a finished item.
  let isGIF=gifMode,begin=start,clipLength=length,title=source.lastPathComponent
  let outputEdge=gifCustom ? gifEdge : 0,outputFPS=gifCustom ? gifFPS : 0
@@ -182,4 +186,33 @@ extension Model {
  Task { @MainActor in await Task.yield();guideStep=0 }
  }
  func finishGuide() { guideStep=nil;UserDefaults.standard.set(true,forKey:"guide.batch.v1") }
+}
+
+extension Model {
+ var allFinishedSelected:Bool { !finishedItems.isEmpty && Set(finishedItems.map(\.id)).isSubset(of:finishedSelection) }
+ func toggleAllFinished() {
+ guard !busy else {return}
+ finishedSelection=allFinishedSelected ? [] : Set(finishedItems.map(\.id))
+ }
+ var canCollage:Bool { (2...9).contains(selectedFinished.count) && selectedFinished.allSatisfy{$0.kind == .livePhoto && $0.isAvailable} }
+ func createCollage(ids:[UUID],options:CollageOptions) async throws {
+ guard !busy,Set(ids).count==ids.count,(2...9).contains(ids.count) else {throw EngineError.cannotWrite(L("请选择 2–9 张实况照片"))}
+ busy=true;seek();finishedStatus=L("正在生成实况拼图…")
+ let temporary=LivePreparation.temporaryDirectory()
+ defer {busy=false;try? FileManager.default.removeItem(at:temporary)}
+ do {
+ let validated=try await checkedFinished(Set(ids))
+ let items=try ids.map { id -> FinishedItem in
+ guard let item=validated.first(where:{$0.id==id}),item.kind == .livePhoto else {throw EngineError.cannotRead(L("拼图仅支持实况照片"))};return item
+ }
+ let pair=try await LiveCollage.generate(inputs:items.map{$0.movURL(in:finishedStore.root)},options:options,in:temporary)
+ try Task.checkCancellation()
+ let item=try await finishedStore.addLive(pair,title:L("实况拼图"),start:0,duration:pair.clipDuration,sourceDuration:pair.clipDuration)
+ finishedItems.insert(item,at:0);finishedSelection=[item.id];sessionProcessedIDs.insert(item.id);finishedFocus=item.id
+ finishedStatus=L("拼图已生成，原实况已保留。");status="已完成处理"
+ } catch {
+ finishedStatus=error is CancellationError ? L("已取消拼图") : error.localizedDescription
+ throw error
+ }
+ }
 }

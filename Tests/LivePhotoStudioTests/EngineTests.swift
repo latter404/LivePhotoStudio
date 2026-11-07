@@ -298,6 +298,33 @@ final class EngineTests: XCTestCase {
         }
     }
 
+    func testImageWatermarkIsWrittenIntoGIFAndCustomVideo() async throws {
+        let src = tmp.appendingPathComponent("image-mark-source.mp4")
+        try makeTestVideo(at: src, seconds: 2, width: 640, height: 360)
+        let imageURL = tmp.appendingPathComponent("mark.png")
+        let context = try XCTUnwrap(CGContext(data: nil, width: 80, height: 40, bitsPerComponent: 8,
+            bytesPerRow: 0, space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
+        context.clear(CGRect(x: 0, y: 0, width: 80, height: 40))
+        context.setFillColor(CGColor(red: 1, green: 0.05, blue: 0.05, alpha: 1))
+        context.fillEllipse(in: CGRect(x: 4, y: 4, width: 32, height: 32))
+        let destination = try XCTUnwrap(CGImageDestinationCreateWithURL(imageURL as CFURL, UTType.png.identifier as CFString, 1, nil))
+        CGImageDestinationAddImage(destination, try XCTUnwrap(context.makeImage()), nil)
+        XCTAssertTrue(CGImageDestinationFinalize(destination))
+        var mark = Watermark(); mark.imageMode = true; mark.imagePath = imageURL.path; mark.position = 3; mark.scale = 0.1; mark.opacity = 1
+        let movie = tmp.appendingPathComponent("image-marked.mov")
+        try await Transcode.run(input: src, output: movie, start: 0, end: 1.5, maxEdge: 320, fps: 24, hevc: true, watermark: mark)
+        let markedAsset = AVURLAsset(url: movie)
+        let markedTracks = try await markedAsset.loadTracks(withMediaType: .video)
+        let track = try XCTUnwrap(markedTracks.first)
+        let size = try await track.load(.naturalSize)
+        XCTAssertEqual(size.width, 320); XCTAssertEqual(size.height, 180)
+        let gif = tmp.appendingPathComponent("image-marked.gif")
+        try await GIFExporter.run(input: src, output: gif, start: 0, length: 1, maxEdge: 320, fps: 15, watermark: mark)
+        let source = try XCTUnwrap(CGImageSourceCreateWithURL(gif as CFURL, nil))
+        XCTAssertEqual(CGImageSourceGetCount(source), 15)
+        XCTAssertGreaterThan(try gif.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0, 0)
+    }
+
     func testFlatExportDoesNotOverwriteOrLeavePartialPair() throws {
         let source=tmp.appendingPathComponent("source"),destination=tmp.appendingPathComponent("destination")
         try FileManager.default.createDirectory(at:source,withIntermediateDirectories:true)

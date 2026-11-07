@@ -38,6 +38,8 @@ A native Mac app that processes videos locally. No account or separate FFmpeg, P
 
 ## Features
 
+- Text or image watermarks with transparency, position, size, opacity, and free placement for Live Photos and GIFs.
+
 - **Video to Live Photo or GIF:** Select a clip on the timeline, adjust its length and cover, preview, then process. Change the visible timeline range for longer videos.
 - **Speed and duration:** Choose 0.25×, 0.5×, 1×, 1.5×, 2×, or 4×. Output defaults to at most 3 seconds, including slow motion. Drag either selection edge for a custom duration; output duration stays visible.
 - **GIF size estimates:** See a sampled estimate before processing and the actual size afterward. Estimates are not a file-size guarantee.
@@ -100,10 +102,10 @@ The Live Photo cover is generated separately as a high-quality JPEG. The encoded
 
 ## Processed items and privacy
 
-Previous results are retained but start unselected after relaunch. The Process badge counts only items created during the current app session. Automatic cleanup is off by default; the storage location and cleanup after each delivery action can be configured separately.
+Previous results are retained but start unselected after relaunch. The Processed badge counts only items created during the current app session. Automatic cleanup is off by default; the storage location and cleanup after each delivery action can be configured separately.
 
 <details>
-<summary>How selection and the Process badge work</summary>
+<summary>How selection and the Processed badge work</summary>
 
 On each launch, previously processed items remain available but start unselected. Select them in the collection when needed. Newly processed items are automatically added to the current selection, so you can create several and act on them together; existing selections are retained during the same app session.
 

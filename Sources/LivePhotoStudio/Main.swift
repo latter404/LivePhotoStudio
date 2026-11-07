@@ -21,6 +21,8 @@ import Observation
  init() {
  let defaults=UserDefaults.standard
  watermark.text=defaults.string(forKey:"watermark.text") ?? ""
+ if let path=defaults.string(forKey:"watermark.imagePath"), !path.isEmpty { watermark.imagePath=path }
+ watermark.imageMode=defaults.bool(forKey:"watermark.imageMode")
  if defaults.object(forKey:"watermark.scale") != nil { watermark.scale=min(0.10,max(0.02,defaults.double(forKey:"watermark.scale"))) }
  if defaults.object(forKey:"watermark.opacity") != nil { watermark.opacity=min(1,max(0.15,defaults.double(forKey:"watermark.opacity"))) }
  watermark.position=min(5,max(0,defaults.integer(forKey:"watermark.position")))
@@ -36,9 +38,20 @@ import Observation
  set { if newValue.isFinite { watermark.opacity=min(100,max(15,newValue))/100 } }
  }
  func watermarkChanged() { invalidateCropResult();clearLivePreview() }
+ func chooseWatermarkImage() {
+  Task { @MainActor in
+   guard let url=await FilePanels.selectWatermarkImage() else { return }
+   watermark.imagePath=url.standardizedFileURL.path;watermark.imageMode=true
+   watermarkChanged();rememberWatermark()
+  }
+ }
+ func removeWatermarkImage() {
+  watermark.imagePath=nil;watermark.imageMode=false;watermarkChanged();rememberWatermark()
+ }
  func rememberWatermark() {
  let defaults=UserDefaults.standard
  defaults.set(watermark.text,forKey:"watermark.text");defaults.set(watermark.scale,forKey:"watermark.scale")
+ defaults.set(watermark.imagePath,forKey:"watermark.imagePath");defaults.set(watermark.imageMode,forKey:"watermark.imageMode")
  defaults.set(watermark.position,forKey:"watermark.position");defaults.set(watermark.opacity,forKey:"watermark.opacity")
  defaults.set(watermark.freeX,forKey:"watermark.freeX");defaults.set(watermark.freeY,forKey:"watermark.freeY")
  }
@@ -450,11 +463,11 @@ struct ContentView: View {
  .onChange(of:model.timelineSpan) { _,_ in model.refreshThumbnails() }
  .onChange(of:model.watermarkEnabled) { _,_ in model.watermarkChanged();model.rememberWatermark() }
  .onChange(of:model.watermark.text) { _,_ in model.watermarkChanged();model.rememberWatermark() }
+ .onChange(of:model.watermark.imageMode) { _,_ in model.watermarkChanged();model.rememberWatermark() }
+ .onChange(of:model.watermark.imagePath) { _,_ in model.watermarkChanged();model.rememberWatermark() }
  .onChange(of:model.watermark.position) { _,position in if position == 5 { model.cropEditing=false };model.watermarkChanged();model.rememberWatermark() }
  .onChange(of:model.watermark.scale) { _,_ in model.watermarkChanged();model.rememberWatermark() }
  .onChange(of:model.watermark.opacity) { _,_ in model.watermarkChanged();model.rememberWatermark() }
- .onChange(of:model.watermark.freeX) { _,_ in model.watermarkChanged() }
- .onChange(of:model.watermark.freeY) { _,_ in model.watermarkChanged() }
  .onDrop(of:[.fileURL],isTargeted:$videoDropTargeted) { providers in guard !model.busy,let p=providers.first else { return false }; _=p.loadObject(ofClass:URL.self) { u,_ in if let u { Task { @MainActor in model.load(u) } } }; return true }
  }
  var actions:some View { FinishedActions(model:model) }

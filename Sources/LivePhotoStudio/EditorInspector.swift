@@ -192,11 +192,31 @@ struct EditorInspector: View {
             }
 
             if model.watermarkEnabled {
-                TextField(L("输入水印文字"), text: $model.watermark.text)
-                    .textFieldStyle(.roundedBorder)
-                    .onChange(of: model.watermark.text) { _, value in
-                        if value.count > 120 { model.watermark.text = String(value.prefix(120)) }
+                Picker(L("水印类型"), selection: $model.watermark.imageMode) {
+                    Text(L("文字")).tag(false)
+                    Text(L("图片")).tag(true)
+                }.pickerStyle(.segmented)
+                if model.watermark.imageMode {
+                    HStack(spacing: 8) {
+                        Image(systemName: "photo").foregroundStyle(.secondary)
+                        Text(model.watermark.displayName.isEmpty ? L("未选择图片") : model.watermark.displayName)
+                            .lineLimit(1).truncationMode(.middle).frame(maxWidth: .infinity, alignment: .leading)
+                        Button(L("选择图片")) { model.chooseWatermarkImage() }
+                        if model.watermark.imagePath != nil {
+                            Button(L("移除"), role: .destructive) { model.removeWatermarkImage() }
+                        }
+                    }.font(.callout)
+                    if model.watermark.imagePath != nil && !model.watermark.imageAvailable {
+                        Text(L("图片水印文件不可用，请重新选择图片"))
+                            .font(.caption).foregroundStyle(.orange)
                     }
+                } else {
+                    TextField(L("输入水印文字"), text: $model.watermark.text)
+                        .textFieldStyle(.roundedBorder)
+                        .onChange(of: model.watermark.text) { _, value in
+                            if value.count > 120 { model.watermark.text = String(value.prefix(120)) }
+                        }
+                }
                 HStack {
                     fieldLabel("位置", symbol: "viewfinder")
                     Spacer()

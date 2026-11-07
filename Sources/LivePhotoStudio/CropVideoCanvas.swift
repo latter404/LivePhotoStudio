@@ -34,7 +34,7 @@ struct CropVideoCanvas:View {
  model.watermark.freeX=next.x;model.watermark.freeY=next.y
  }
  .onEnded { _ in
- if watermarkDragOrigin != nil { model.rememberWatermark() }
+ if watermarkDragOrigin != nil { model.watermarkChanged();model.rememberWatermark() }
  watermarkDragOrigin=nil
  })
  .position(x:(crop.minX-visible.minX)*scale+rect.midX,y:(crop.minY-visible.minY)*scale+size.height-rect.midY)

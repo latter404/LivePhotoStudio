@@ -4,6 +4,8 @@ import CoreImage
 
 struct Watermark: Sendable, Equatable {
  var text = ""
+ var imagePath: String? = nil
+ var imageMode = false
  var position = 0
  // For free placement, 0...1 spans the available space around the stamp.
  // Y follows the editor's top-to-bottom coordinates, not Core Graphics' Y axis.
@@ -12,10 +14,32 @@ struct Watermark: Sendable, Equatable {
  var scale = 0.04
  var opacity = 0.75
  var content: String { String(text.replacingOccurrences(of:"\n",with:" ").replacingOccurrences(of:"\r",with:" ").trimmingCharacters(in:.whitespacesAndNewlines).prefix(120)) }
- var active: Bool { !content.isEmpty }
+ var imageAvailable: Bool { imageURL.map { FileManager.default.isReadableFile(atPath:$0.path) } ?? false }
+ var active: Bool { imageMode ? imageAvailable : !content.isEmpty }
+ var imageURL: URL? {
+  guard let imagePath, !imagePath.isEmpty else { return nil }
+  return URL(fileURLWithPath:imagePath)
+ }
+ var displayName: String { imageURL?.lastPathComponent ?? "" }
  func stamp(in size: CGSize) -> (CGImage, CGRect)? {
  guard active, size.width.isFinite, size.height.isFinite, size.width > 0, size.height > 0, scale.isFinite else { return nil }
  let short = min(size.width,size.height), margin = short * 0.03
+ if imageMode, let url=imageURL {
+  guard let image=WatermarkImageCache.shared.image(for:url) else { return nil }
+  let sourceWidth=CGFloat(image.width),sourceHeight=CGFloat(image.height)
+  guard sourceWidth>0,sourceHeight>0 else { return nil }
+  let targetHeight=min(short*min(0.24,max(0.03,scale*3.0)),size.height)
+  let targetWidth=min(size.width,targetHeight*sourceWidth/sourceHeight)
+  let rect:CGRect
+  if position == 5 {
+   rect=CGRect(x:(size.width-targetWidth)*Self.freeCoordinate(freeX),y:(size.height-targetHeight)*(1-Self.freeCoordinate(freeY)),width:targetWidth,height:targetHeight)
+  } else {
+   let x:CGFloat = position == 4 ? (size.width-targetWidth)/2 : [1,3].contains(position) ? margin : size.width-margin-targetWidth
+   let y:CGFloat = position == 4 ? (size.height-targetHeight)/2 : [2,3].contains(position) ? size.height-margin-targetHeight : margin
+   rect=CGRect(x:x,y:y,width:targetWidth,height:targetHeight)
+  }
+  return (image,rect)
+ }
  let effectiveScale = min(0.12,max(0.015,scale))
  let text = content
  let key = WatermarkStampCache.Key(text:text,width:size.width,height:size.height,scale:effectiveScale)
@@ -70,8 +94,22 @@ struct Watermark: Sendable, Equatable {
  func applying(to image:CGImage) -> CGImage {
  let size=CGSize(width:image.width,height:image.height)
  guard let (label,rect)=stamp(in:size),let c=CGContext(data:nil,width:image.width,height:image.height,bitsPerComponent:8,bytesPerRow:0,space:CGColorSpaceCreateDeviceRGB(),bitmapInfo:CGImageAlphaInfo.premultipliedLast.rawValue) else { return image }
- c.draw(image,in:CGRect(origin:.zero,size:size));c.setAlpha(opacity);c.draw(label,in:rect)
+ c.interpolationQuality = .high
+ c.draw(image,in:CGRect(origin:.zero,size:size));c.setAlpha(opacity);c.interpolationQuality = .high;c.draw(label,in:rect)
  return c.makeImage() ?? image
+ }
+}
+
+private final class WatermarkImageCache: @unchecked Sendable {
+ static let shared=WatermarkImageCache()
+ private let lock=NSLock()
+ private var entries:[String:CGImage]=[:]
+ func image(for url:URL)->CGImage? {
+  let key=url.standardizedFileURL.path
+  lock.lock();if let image=entries[key] {lock.unlock();return image};lock.unlock()
+  guard let source=CGImageSourceCreateWithURL(url as CFURL,nil),
+        let image=CGImageSourceCreateImageAtIndex(source,0,[kCGImageSourceShouldCache:true] as CFDictionary) else {return nil}
+  lock.lock();entries[key]=image;lock.unlock();return image
  }
 }
 

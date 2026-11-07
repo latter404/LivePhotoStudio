@@ -25,6 +25,11 @@ import UniformTypeIdentifiers
  panel.allowsMultipleSelection=false;panel.canChooseDirectories=false
  return await present(panel,operation:"open")
  }
+ static func selectWatermarkImage() async -> URL? {
+  let panel=NSOpenPanel();panel.allowedContentTypes=[.png,.jpeg,.heic,.tiff,.gif]
+  panel.allowsMultipleSelection=false;panel.canChooseDirectories=false;panel.prompt=L("选择图片")
+  return await present(panel,operation:"watermark.image")
+ }
  static func selectExportDirectory() async -> URL? {
  ExportDiagnostics.record("live.panel.create")
  let panel=NSOpenPanel();panel.canChooseFiles=false;panel.canChooseDirectories=true

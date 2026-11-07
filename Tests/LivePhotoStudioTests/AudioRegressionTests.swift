@@ -93,6 +93,23 @@ final class AudioRegressionTests: XCTestCase {
         }
     }
 
+    func testCollageUsesOnlyFirstEnabledAudioWhenRequested() async throws {
+        let source=directory.appendingPathComponent("collage-audio.mov")
+        try await makeMovie(at:source,stereoAAC:true,alternateEnabled:false)
+        for enabled in [false,true] {
+            var options=CollageOptions();options.duration=0.8;options.includeFirstAudio=enabled
+            let pair=try await LiveCollage.generate(inputs:[source,source],options:options,in:directory.appendingPathComponent("collage-\(enabled)"))
+            let tracks=try await AVURLAsset(url:pair.movURL).loadTracks(withMediaType:.audio)
+            XCTAssertEqual(tracks.count,enabled ? 1 : 0)
+            if let track=tracks.first {
+                let bytes=try await audioBytes(url:pair.movURL,track:track)
+                XCTAssertFalse(bytes.isEmpty)
+                let duration=try await track.load(.timeRange).duration.seconds
+                XCTAssertEqual(duration,0.8,accuracy:0.04)
+            }
+        }
+    }
+
     private func audioBytes(url: URL, track: AVAssetTrack) async throws -> Data {
         let reader = try AVAssetReader(asset: AVURLAsset(url: url))
         // AVAssetReaderTrackOutput requires a track belonging to its exact asset instance.

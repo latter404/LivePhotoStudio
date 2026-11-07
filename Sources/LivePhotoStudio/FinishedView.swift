@@ -12,30 +12,28 @@ struct FinishedActions:View {
  }.buttonStyle(.borderedProminent).controlSize(.large)
  .disabled(model.url == nil || model.busy || !model.finishedLoaded)
  .guideTarget(.process)
- .overlay(alignment:.topTrailing) {
- if model.sessionProcessedCount > 0 {
- Button { model.seek();model.showFinished=true } label: {
- Text("\(model.sessionProcessedCount)").font(.system(size:12,weight:.semibold,design:.rounded))
- .foregroundStyle(.white).padding(.horizontal,6).frame(minWidth:23,minHeight:23)
- .background(.red,in:Capsule()).overlay(Capsule().stroke(.background,lineWidth:2))
- .padding(4).contentShape(Rectangle())
- }.buttonStyle(.plain).offset(x:9,y:-11).disabled(model.busy)
- .accessibilityLabel(L("本次已处理")+" \(model.sessionProcessedCount)")
- .help(L("本次处理数量，重启后归零"))
+ HStack(spacing:10) {
+  Button { model.savePhotos() } label: {
+   Label(L("添加到照片"),systemImage:"photo.on.rectangle").frame(maxWidth:.infinity).frame(height:32)
+  }.buttonStyle(.bordered).controlSize(.large).disabled(model.url == nil || model.busy)
+  Button { model.sendAirDrop() } label: {
+   Label(L("隔空投送"),systemImage:"antenna.radiowaves.left.and.right").frame(maxWidth:.infinity).frame(height:32)
+  }.buttonStyle(.bordered).controlSize(.large).disabled(model.url == nil || model.busy)
+ }.guideTarget(.delivery)
+ HStack(spacing:10) {
+  Button { model.export() } label: { Label(L("导出"),systemImage:"folder").frame(maxWidth:.infinity).frame(height:32) }
+   .buttonStyle(.bordered).controlSize(.large).disabled(model.url == nil || model.busy)
+  Button { model.seek();model.showFinished=true } label: {
+   Label(L("已处理"),systemImage:"square.stack").frame(maxWidth:.infinity).frame(height:32)
+  }.buttonStyle(.bordered).controlSize(.large).disabled(model.busy).guideTarget(.collection)
+   .overlay(alignment:.topTrailing) {
+    if model.sessionProcessedCount > 0 {
+     Text("\(model.sessionProcessedCount)").font(.system(size:11,weight:.semibold,design:.rounded)).foregroundStyle(.white)
+      .padding(.horizontal,6).frame(minWidth:20,minHeight:20).background(.red,in:Capsule()).overlay(Capsule().stroke(.background,lineWidth:2)).offset(x:8,y:-8)
+    }
+   }
  }
- }
- if !model.finishedItems.isEmpty || model.guideStep != nil {
- Button { model.seek();model.showFinished=true } label: {
- HStack(spacing:5) {
- Image(systemName:"square.stack").foregroundStyle(.primary)
- Text(L("已处理")).foregroundStyle(.primary);Spacer()
- Text(L("已选 \(model.finishedSelection.count)/\(model.finishedItems.count)"))
- Image(systemName:"chevron.right").font(.caption2)
- }.font(.caption).foregroundStyle(.secondary)
- }.buttonStyle(.plain).disabled(model.busy).guideTarget(.collection)
- }
- FinishedDelivery(model:model).guideTarget(.delivery)
- if model.busy || (!model.status.isEmpty && !["所有处理","拖动蓝色","已旋转","方向已","已恢复","已取消","已完成处理"].contains(where:{model.status.hasPrefix($0)})) {
+ if model.busy || (!model.status.isEmpty && !["所有处理","拖动蓝色","已旋转","方向已","已恢复","已取消","已完成处理","已导出","GIF 已导出","当前选区已添加"].contains(where:{model.status.hasPrefix($0)})) {
  HStack(alignment:.top,spacing:8) {
  if model.busy { ProgressView().controlSize(.small) }
  Text(L(model.status)).font(.caption).foregroundStyle(.primary).frame(maxWidth:.infinity,alignment:.leading).lineLimit(3).textSelection(.enabled)
@@ -48,18 +46,15 @@ struct FinishedActions:View {
 struct FinishedDelivery:View {
  @Bindable var model:Model
  var body:some View {
- VStack(spacing:10) {
- HStack(spacing:10) {
+ HStack(spacing:8) {
+ HStack(spacing:8) {
  Button { model.saveFinishedPhotos() } label: {
- Label(L("添加到照片"),systemImage:"photo.on.rectangle").frame(maxWidth:.infinity)
+ Label(L("添加到照片"),systemImage:"photo.on.rectangle").frame(maxWidth:.infinity).frame(height:30)
  }.help(L("将所选处理结果添加到照片"))
  Button { model.sendFinished() } label: {
- Label(L("隔空投送"),systemImage:"antenna.radiowaves.left.and.right").frame(maxWidth:.infinity)
+ Label(L("隔空投送"),systemImage:"antenna.radiowaves.left.and.right").frame(maxWidth:.infinity).frame(height:30)
  }.help(L("发送所选处理结果"))
- }.buttonStyle(.bordered).controlSize(.large)
- Button { model.exportFinished() } label: {
- Label(model.finishedExportTitle,systemImage:"folder").frame(maxWidth:.infinity)
- }.buttonStyle(.bordered).controlSize(.large).help(L("导出所选处理结果"))
+ }.buttonStyle(.bordered).controlSize(.small)
  }.disabled(model.busy || model.selectedFinished.isEmpty || model.selectedFinished.contains(where:{!$0.isAvailable}))
  }
 }
@@ -67,11 +62,11 @@ struct FinishedDelivery:View {
 struct FinishedView:View {
  @Bindable var model:Model
  @Environment(\.dismiss) private var dismiss
+ @State private var showCollage=false
  var body:some View {
  VStack(spacing:0) {
  HStack {
  Label(L("已处理"),systemImage:"square.stack").font(.title2.weight(.semibold))
- Text("\(model.finishedItems.count)").foregroundStyle(.secondary)
  Spacer()
  Button(L("完成")) { dismiss() }.keyboardShortcut(.cancelAction).disabled(model.busy)
  }.padding(20)
@@ -111,22 +106,19 @@ struct FinishedView:View {
  Divider()
  VStack(spacing:12) {
  HStack(spacing:12) {
- Button(L("全选")) { model.finishedSelection=Set(model.finishedItems.map(\.id)) }
- Button(L("取消全选")) { model.finishedSelection=[] }
- Text(L("已选 \(model.finishedSelection.count)/\(model.finishedItems.count)")).font(.caption).foregroundStyle(.secondary)
+ Button { model.toggleAllFinished() } label: {
+ Label(L("全选"),systemImage:model.allFinishedSelected ? "checkmark.circle.fill" : "circle")
+ }.overlay(alignment:.topTrailing) {
+ }.help(L(model.allFinishedSelected ? "再次点击取消全选" : "选择全部处理结果"))
+ Button(L("拼图"),systemImage:"square.grid.2x2") { showCollage=true }.disabled(!model.canCollage).help(L("请选择 2–9 张实况照片"))
+ Button { model.exportFinished() } label: { Label(L("导出"),systemImage:"folder") }.buttonStyle(.bordered).controlSize(.small).help(L("导出所选处理结果")).disabled(model.finishedSelection.isEmpty)
+ Button(L("删除"),systemImage:"trash",role:.destructive) { model.removeFinished() }.disabled(model.finishedSelection.isEmpty)
  Spacer()
- Button(L("移除"),systemImage:"trash",role:.destructive) { model.removeFinished() }.disabled(model.finishedSelection.isEmpty)
+ FinishedDelivery(model:model)
  }.disabled(model.busy)
- HStack(alignment:.bottom,spacing:20) {
- HStack(spacing:8) {
- if model.busy { ProgressView().controlSize(.small) }
- Text(L(model.finishedStatus.isEmpty ? "处理结果保存在本机，关闭窗口后仍会保留。" : model.finishedStatus))
- .font(.caption).foregroundStyle(.secondary).lineLimit(3).frame(maxWidth:.infinity,alignment:.leading)
- }
- FinishedDelivery(model:model).frame(width:300)
- }
  }.padding(20)
  }.frame(width:820,height:560).interactiveDismissDisabled(model.busy)
+ .sheet(isPresented:$showCollage) { CollageView(model:model) }
  .onAppear { if model.finishedFocus == nil { model.finishedFocus=model.finishedItems.first?.id } }
  }
 }
