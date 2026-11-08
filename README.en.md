@@ -1,6 +1,8 @@
 <p align="center"><img src="Assets/AppIcon.png" width="88" alt="LivePhoto Studio icon"></p>
 
-<h1 align="center">LivePhoto Studio · 实况工坊</h1>
+<h1 align="center">实况工坊 · LivePhoto Studio</h1>
+
+<p align="center"><strong>LivePhoto Studio</strong> · Native macOS video-to-Live-Photo and GIF tool</p>
 
 <p align="center"><a href="https://github.com/latter404/LivePhotoStudio/releases/latest">Download</a> · <a href="README.md">简体中文</a> · <a href="RELEASE_NOTES.md">Release notes</a> · <a href="https://github.com/latter404/LivePhotoStudio/issues">Report an issue</a></p>
 
@@ -10,13 +12,11 @@ LivePhoto Studio is a native macOS app for turning video clips into Live Photos 
 
 ## Feature screenshots
 
-![LivePhoto Studio 1.7 editor with a landscape video, timeline, editing settings, and output settings](Assets/editor-1.7-public.png)
+![LivePhoto Studio 1.7 editor with video preview, timeline, editing settings, and output settings](Assets/editor-1.7-public.png)
 
 ![LivePhoto Studio 1.7 output settings for Live Photos, GIFs, original size, and estimates](Assets/output-1.7-public.png)
 
 ![LivePhoto Studio 1.7 processed list with batch selection, preview, and export](Assets/processed-1.7-public.png)
-
-> The screenshots use dedicated landscape nature demo footage. Original filenames and local paths are not published with the project.
 
 ## Features
 

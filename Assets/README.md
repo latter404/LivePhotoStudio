@@ -4,6 +4,6 @@ AppIcon.png and AppIcon.icns contain the light app icon created with AI assistan
 
 See [third-party notices](../Licenses/THIRD_PARTY_NOTICES.txt) for provenance and the separate treatment of Apple platform components and trademarks.
 
-## Public screenshots
+## Homepage images
 
-The 1.7 screenshots use dedicated landscape nature demo footage with generic display names. Original filenames and local paths are intentionally omitted.
+The three `*-1.7-public.png` files are the screenshots embedded by the two homepage README files. They are presentation assets, not release downloads.

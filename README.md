@@ -2,6 +2,8 @@
 
 <h1 align="center">实况工坊 · LivePhoto Studio</h1>
 
+<p align="center">原生 macOS 视频转实况照片与 GIF 工具</p>
+
 <p align="center"><a href="https://github.com/latter404/LivePhotoStudio/releases/latest">下载安装</a> · <a href="README.en.md">English</a> · <a href="RELEASE_NOTES.md">版本说明</a> · <a href="https://github.com/latter404/LivePhotoStudio/issues">反馈问题</a></p>
 
 **macOS 14+ · Apple 芯片 / Intel · 简体中文 / English · MIT 开源**
@@ -10,13 +12,11 @@
 
 ## 功能展示
 
-![实况工坊 1.7 主界面：自然视频预览、时间轴、画面设置与输出设置](Assets/editor-1.7-public.png)
+![实况工坊 1.7 主界面：视频预览、时间轴、画面设置与输出设置](Assets/editor-1.7-public.png)
 
 ![实况工坊 1.7 输出设置：实况照片、GIF、原始尺寸与体积预估](Assets/output-1.7-public.png)
 
 ![实况工坊 1.7 已处理列表：批量选择、预览与导出](Assets/processed-1.7-public.png)
-
-> 截图使用专用横屏自然风光演示素材；原始文件名和本机路径未随项目公开。
 
 ## 能做什么
 
