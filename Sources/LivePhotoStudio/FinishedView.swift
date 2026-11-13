@@ -6,9 +6,16 @@ import ImageIO
 struct FinishedActions:View {
  @Bindable var model:Model
  var body:some View {
- VStack(spacing:12) {
+ VStack(spacing:8) {
+ statusBanner
  Button { model.processCurrent() } label: {
- Label(L("处理"),systemImage:"sparkles").font(.headline).frame(maxWidth:.infinity,minHeight:34)
+ HStack(spacing:8) {
+  Image(systemName:"sparkles")
+   .symbolEffect(.pulse,options:.repeating,isActive:model.busy)
+  Text(L(model.busy ? "处理中…" : "处理"))
+ }
+ .font(.headline)
+ .frame(maxWidth:.infinity,minHeight:34)
  }.buttonStyle(.borderedProminent).controlSize(.large)
  .disabled(model.url == nil || model.busy || !model.finishedLoaded)
  .guideTarget(.process)
@@ -33,29 +40,45 @@ struct FinishedActions:View {
     }
    }
  }
- if model.busy || (!model.status.isEmpty && !["所有处理","拖动蓝色","已旋转","方向已","已恢复","已取消","已完成处理","已导出","GIF 已导出","当前选区已添加"].contains(where:{model.status.hasPrefix($0)})) {
- HStack(alignment:.top,spacing:8) {
- if model.busy { ProgressView().controlSize(.small) }
- Text(L(model.status)).font(.caption).foregroundStyle(.primary).frame(maxWidth:.infinity,alignment:.leading).lineLimit(3).textSelection(.enabled)
  }
  }
- }
+
+ @ViewBuilder private var statusBanner:some View {
+  let visible = !model.busy && !model.status.isEmpty && !["所有处理","拖动蓝色","已旋转","方向已","已恢复","已取消","已完成处理","已导出","GIF 已导出","当前选区已添加"].contains(where:{model.status.hasPrefix($0)})
+  let error = model.status.contains("失败") || model.status.contains("无法") || model.status.contains("错误") || model.status.contains("不支持") || model.status.contains("异常")
+  if visible {
+   HStack(alignment:.center,spacing:7) {
+    Image(systemName:error ? "exclamationmark.triangle.fill" : "info.circle.fill")
+     .foregroundStyle(error ? Color.red : Color.secondary)
+    Text(L(model.status))
+     .font(.caption)
+     .foregroundStyle(error ? Color.red : Color.primary)
+     .lineLimit(2)
+     .frame(maxWidth:.infinity,alignment:.leading)
+     .textSelection(.enabled)
+   }
+   .padding(.horizontal,9)
+   .frame(maxWidth:.infinity,minHeight:36,maxHeight:36,alignment:.center)
+   .background((error ? Color.red : Color.secondary).opacity(0.12),in:RoundedRectangle(cornerRadius:8))
+  } else {
+   Color.clear.frame(height:0)
+  }
  }
 }
 
 struct FinishedDelivery:View {
  @Bindable var model:Model
  var body:some View {
- HStack(spacing:8) {
- HStack(spacing:8) {
+ HStack(spacing:10) {
  Button { model.saveFinishedPhotos() } label: {
- Label(L("添加到照片"),systemImage:"photo.on.rectangle").frame(maxWidth:.infinity).frame(height:30)
- }.help(L("将所选处理结果添加到照片"))
+ Label(L("添加到照片"),systemImage:"photo.on.rectangle").frame(maxWidth:.infinity).frame(height:32)
+ }.controlSize(.large).help(L("将所选处理结果添加到照片"))
  Button { model.sendFinished() } label: {
- Label(L("隔空投送"),systemImage:"antenna.radiowaves.left.and.right").frame(maxWidth:.infinity).frame(height:30)
- }.help(L("发送所选处理结果"))
- }.buttonStyle(.bordered).controlSize(.small)
- }.disabled(model.busy || model.selectedFinished.isEmpty || model.selectedFinished.contains(where:{!$0.isAvailable}))
+ Label(L("隔空投送"),systemImage:"antenna.radiowaves.left.and.right").frame(maxWidth:.infinity).frame(height:32)
+ }.controlSize(.large).help(L("发送所选处理结果"))
+ }.buttonStyle(.bordered).buttonBorderShape(.capsule)
+ .frame(minWidth:330)
+ .disabled(model.busy || model.selectedFinished.isEmpty || model.selectedFinished.contains(where:{!$0.isAvailable}))
  }
 }
 
@@ -63,6 +86,7 @@ struct FinishedView:View {
  @Bindable var model:Model
  @Environment(\.dismiss) private var dismiss
  @State private var showCollage=false
+ @State private var showContextGuide=false
  var body:some View {
  VStack(spacing:0) {
  HStack {
@@ -89,7 +113,10 @@ struct FinishedView:View {
  VStack(alignment:.leading,spacing:5) {
  Text(item.title).font(.callout.weight(.medium)).lineLimit(1).truncationMode(.middle)
  Text("\(item.start,specifier:"%.2f")–\(item.start+(item.sourceDuration ?? item.duration),specifier:"%.2f") s").font(.caption).monospacedDigit().foregroundStyle(.secondary)
- Label(item.isAvailable ? (item.kind == .gif ? "GIF" : "LIVE") : L("文件不可用"),systemImage:item.isAvailable ? (item.kind == .gif ? "photo" : "livephoto") : "exclamationmark.triangle").font(.caption2).foregroundStyle(item.isAvailable ? Color.secondary : Color.orange)
+ HStack(spacing:8) {
+  Label(item.isAvailable ? (item.kind == .gif ? "GIF" : "LIVE") : L("文件不可用"),systemImage:item.isAvailable ? (item.kind == .gif ? "photo" : "livephoto") : "exclamationmark.triangle")
+  Text(ByteCountFormatter.string(fromByteCount:item.byteCount,countStyle:.file)).monospacedDigit()
+ }.font(.caption2).foregroundStyle(item.isAvailable ? Color.secondary : Color.orange)
  }.frame(maxWidth:.infinity,alignment:.leading)
  }
  }.buttonStyle(.plain)
@@ -115,11 +142,22 @@ struct FinishedView:View {
  Button(L("删除"),systemImage:"trash",role:.destructive) { model.removeFinished() }.disabled(model.finishedSelection.isEmpty)
  Spacer()
  FinishedDelivery(model:model)
- }.disabled(model.busy)
+ }.disabled(model.busy).contextGuideTarget(.finishedActions)
  }.padding(20)
  }.frame(width:820,height:560).interactiveDismissDisabled(model.busy)
  .sheet(isPresented:$showCollage) { CollageView(model:model) }
- .onAppear { if model.finishedFocus == nil { model.finishedFocus=model.finishedItems.first?.id } }
+ .overlayPreferenceValue(ContextGuideTargetPreferenceKey.self) { anchors in
+  if showContextGuide {
+   ContextGuideOverlay(target:.finishedActions,symbol:"square.and.arrow.up",title:UIStrings.isEnglish ? "Batch actions" : "批量操作",detail:UIStrings.isEnglish ? "Select one or more results, then add them to Photos, AirDrop, export, or create a collage from this action area." : "选择一个或多个处理结果后，可以在这里添加到照片、隔空投送、导出，或生成实况拼图。",anchors:anchors) {
+    showContextGuide=false
+    UserDefaults.standard.set(true,forKey:"guide.finished.v1")
+   }
+  }
+ }
+ .onAppear {
+  if model.finishedFocus == nil { model.finishedFocus=model.finishedItems.first?.id }
+  if !model.finishedItems.isEmpty && !UserDefaults.standard.bool(forKey:"guide.finished.v1") { showContextGuide=true }
+ }
  }
 }
 
@@ -148,13 +186,21 @@ private struct FinishedPreview:View {
  if loader.loading { ProgressView().padding(10).background(.regularMaterial,in:Circle()) }
  }
  }.frame(maxWidth:.infinity,maxHeight:.infinity).clipped()
+  // The first click loads the native PHLivePhoto view and starts playback.
+  // Once it is present, the system view supplies its own Live Photo badge and
+  // hover-to-play interaction.
+  .contentShape(Rectangle())
+  .onTapGesture {
+   guard item.kind == .livePhoto, item.isAvailable, !loader.loading else { return }
+   if loader.photo != nil { play += 1 }
+   else { loader.load(item:item,root:root); play += 1 }
+  }
  if loader.failed { Text(L("无法预览此处理结果")).font(.caption).foregroundStyle(.secondary) }
- Button(L(item.kind == .gif ? (playing ? "停止预览" : "预览 GIF") : "播放实况"),systemImage:playing && item.kind == .gif ? "stop.fill" : "play.fill") {
- if item.kind == .gif { playing.toggle() }
- else if loader.photo != nil { play += 1 }
- else { loader.load(item:item,root:root);play += 1 }
- }.disabled(!item.isAvailable || loader.loading)
- Text(ByteCountFormatter.string(fromByteCount:item.byteCount,countStyle:.file)).font(.caption).foregroundStyle(.secondary)
+ if item.kind == .gif {
+  Button(L(playing ? "停止预览" : "预览 GIF"),systemImage:playing ? "stop.fill" : "play.fill") {
+   playing.toggle()
+  }.disabled(!item.isAvailable || loader.loading)
+ }
  }
  .onDisappear { loader.cancel() }
  }

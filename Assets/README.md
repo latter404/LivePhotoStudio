@@ -6,4 +6,4 @@ See [third-party notices](../Licenses/THIRD_PARTY_NOTICES.txt) for provenance an
 
 ## Homepage images
 
-The three `*-1.7-public.png` files are the screenshots embedded by the two homepage README files. They are presentation assets, not release downloads.
+The current `*-1.7.1.png` files are the screenshots embedded by the two homepage README files. Earlier version screenshots remain for historical release notes. They are presentation assets, not release downloads.

@@ -14,7 +14,7 @@ struct CollageGeometry {
  let size:CGSize
  let rects:[CGRect]
  init(sizes:[CGSize],layout:CollageLayout,maxEdge:Int) throws {
- guard (2...9).contains(sizes.count),maxEdge>=2,maxEdge<=7680,
+ guard (2...9).contains(sizes.count),(maxEdge == 0 || (2...7680).contains(maxEdge)),
  sizes.allSatisfy({$0.width.isFinite && $0.height.isFinite && $0.width>=2 && $0.height>=2}) else {throw EngineError.cannotWrite(L("拼图参数无效"))}
  let columns=layout == .horizontal ? sizes.count : layout == .vertical ? 1 : Int(ceil(sqrt(Double(sizes.count))))
  let rows=stride(from:0,to:sizes.count,by:columns).map{Array($0..<min($0+columns,sizes.count))}
@@ -22,7 +22,7 @@ struct CollageGeometry {
  let rowRatios=rows.map{$0.reduce(0){$0+ratios[$1]}}
  let naturalWidth=zip(rows,rowRatios).map { row,sum in row.map{sizes[$0].height}.min()! * sum }.min()!
  let relativeHeight=rowRatios.reduce(0){$0+1/$1}
- let scale=min(1,Double(maxEdge)/max(naturalWidth,naturalWidth*relativeHeight))
+ let scale=maxEdge == 0 ? 1 : min(1,Double(maxEdge)/max(naturalWidth,naturalWidth*relativeHeight))
  let w=max(2,floor(naturalWidth*scale/2)*2),h=max(2,floor(naturalWidth*relativeHeight*scale/2)*2)
  size=CGSize(width:w,height:h)
  var rectangles:[CGRect]=[],y=0.0,relativeY=0.0
@@ -44,7 +44,9 @@ struct CollageGeometry {
 
 struct CollageOptions {
  var layout:CollageLayout = .grid
- var maxEdge=3840
+ /// 0 means preserve the natural composite size, matching the main export
+ /// settings' "原始" option.
+ var maxEdge=0
  var fps=30
  var duration=3.0
  var includeFirstAudio=false
@@ -53,7 +55,7 @@ struct CollageOptions {
 
 enum LiveCollage {
  static func generate(inputs:[URL],options:CollageOptions,in directory:URL) async throws -> ConversionResult {
- guard (2...9).contains(inputs.count),[24,30,50,60].contains(options.fps),options.duration.isFinite,options.duration>0,options.duration<=30 else {throw EngineError.cannotWrite(L("拼图参数无效"))}
+ guard (2...9).contains(inputs.count),[24,25,30,50,60].contains(options.fps),options.duration.isFinite,options.duration>0,options.duration<=30 else {throw EngineError.cannotWrite(L("拼图参数无效"))}
  try Task.checkCancellation()
  // A caller owns this new directory. Never overwrite an existing result.
  guard !FileManager.default.fileExists(atPath:directory.path) else {throw EngineError.cannotWrite(L("拼图目录已存在"))}

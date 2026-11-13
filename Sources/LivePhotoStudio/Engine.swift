@@ -169,9 +169,10 @@ enum LivePhotoEngine {
         try await extractStill(asset: asset, at: stillTimeAbs, to: imageURL,
                                heic: settings.useHEIC, assetID: assetID)
 
+        let videoCompatible = await isVideoPassthroughCompatible(videoTrack)
         let videoWasCopied: Bool
-        if settings.exactTrim {
-            progress?("prog_exact")
+        if settings.exactTrim || !videoCompatible {
+            progress?(settings.exactTrim ? "prog_exact" : "prog_reencode")
             let tmp = outputDir.appendingPathComponent(".\(baseName).exact.mov")
             try? FileManager.default.removeItem(at: tmp)
             defer { try? FileManager.default.removeItem(at: tmp) }
@@ -184,9 +185,7 @@ enum LivePhotoEngine {
         } else {
             // Only the video track drives keyframe snapping: passthrough can
             // start only at a sync frame, but a re-encoded track cuts precisely.
-            let videoCompatible = await isVideoPassthroughCompatible(videoTrack)
-            guard videoCompatible else { throw EngineError.cannotWrite("此编码无法无损封装，请主动选择自定义模式。") }
-            progress?(videoCompatible ? "prog_mux" : "prog_reencode")
+            progress?("prog_mux")
             var range: CMTimeRange? = nil
             if trimStart > 0.01 || trimEnd < duration - 0.01 {
                 let start = videoCompatible

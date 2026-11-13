@@ -5,6 +5,7 @@ import SwiftUI
 struct CropVideoCanvas:View {
  @Bindable var model:Model
  @State private var watermarkDragOrigin:CGPoint?
+ @State private var hoveringPreview=false
  var body:some View {
  GeometryReader { geometry in
  let source=model.orientedDisplaySize
@@ -17,6 +18,23 @@ struct CropVideoCanvas:View {
  NativePlayer(player:model.player)
  .frame(width:source.width*scale,height:source.height*scale)
  .offset(x:-visible.minX*scale,y:-visible.minY*scale)
+ if !editing {
+  Color.clear
+   .contentShape(Rectangle())
+   .onHover { hoveringPreview=$0 }
+   .onTapGesture { model.togglePreview() }
+   .overlay(alignment:.bottom) {
+    if hoveringPreview {
+     Image(systemName:model.previewing ? "pause.fill" : "play.fill")
+      .font(.system(size:14,weight:.semibold))
+      .foregroundStyle(.white)
+      .frame(width:34,height:34)
+      .background(.black.opacity(0.45),in:Circle())
+      .padding(12)
+      .allowsHitTesting(false)
+    }
+   }
+ }
  if let mark=model.activeWatermark {
  let size=CGSize(width:crop.width*scale,height:crop.height*scale)
  if let (stamp,rect)=mark.stamp(in:size) {

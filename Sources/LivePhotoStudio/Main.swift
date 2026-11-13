@@ -230,10 +230,32 @@ import Observation
  }
  private var previewGeneration = UUID()
  private var playbackEndObserver:NSObjectProtocol?
+ private func stopPreviewObservers() {
+  if let boundaryObserver { player.removeTimeObserver(boundaryObserver);self.boundaryObserver=nil }
+  if let playbackEndObserver { NotificationCenter.default.removeObserver(playbackEndObserver);self.playbackEndObserver=nil }
+ }
+ func togglePreview() {
+  guard url != nil,!busy else { return }
+  if previewing {
+   previewGeneration=UUID()
+   previewing=false
+   stopPreviewObservers()
+   player.currentItem?.forwardPlaybackEndTime = .invalid
+   player.pause()
+   return
+  }
+  let current=player.currentTime().seconds
+  let resume=current.isFinite && current >= start && current < start + length - 1.0/60000 ? current : start
+  preview(from:resume)
+ }
  func preview() {
  guard url != nil,!busy else { return }
- if previewing { seek();return }
- seek()
+  if previewing { seek();return }
+  preview(from:start)
+ }
+ private func preview(from position:Double) {
+  guard url != nil,!busy else { return }
+  stopPreviewObservers()
  let generation=UUID();previewGeneration=generation
  previewing=true
  player.isMuted=gifMode || mute
@@ -245,7 +267,7 @@ import Observation
  boundaryObserver=player.addBoundaryTimeObserver(forTimes:[NSValue(time:CMTime(seconds:start+length,preferredTimescale:60000))],queue:.main) { [weak self] in
  Task { @MainActor in guard let self,self.previewGeneration == generation else { return };self.seek() }
  }
- player.seek(to:CMTime(seconds:start,preferredTimescale:60000),toleranceBefore:.zero,toleranceAfter:.zero) { [weak self] finished in
+  player.seek(to:CMTime(seconds:position,preferredTimescale:60000),toleranceBefore:.zero,toleranceAfter:.zero) { [weak self] finished in
  Task { @MainActor in
  guard let self,finished,self.previewing,self.previewGeneration == generation else { return }
  self.player.playImmediately(atRate:Float(self.speed))
@@ -254,8 +276,7 @@ import Observation
  }
  func seek(to position:Double? = nil) {
  previewGeneration=UUID();previewing=false
- if let boundaryObserver { player.removeTimeObserver(boundaryObserver);self.boundaryObserver=nil }
- if let playbackEndObserver { NotificationCenter.default.removeObserver(playbackEndObserver);self.playbackEndObserver=nil }
+  stopPreviewObservers()
  player.pause()
  player.currentItem?.forwardPlaybackEndTime = .invalid
  let time=max(0,min(position ?? start+cover,max(0,duration-1.0/60000)))
@@ -311,7 +332,7 @@ import Observation
  let r=try await recipe.generate(in:dir)
  ExportDiagnostics.record("live.publish")
  result=try ExportFiles.publish(r,into:root,name:name)
- status="已导出 · \(String(format:"%.2f",r.clipDuration)) 秒 · "+(recipe.reencodes ? "已按设置重新编码" : "视频未经重新编码")
+ status="已导出 · \(String(format:"%.2f",r.clipDuration)) 秒 · "+(r.videoWasCopied ? "视频未经重新编码" : "已按设置重新编码")
  ExportDiagnostics.record("live.completed")
  } catch { status=error.localizedDescription;ExportDiagnostics.record("live.failed domain=\((error as NSError).domain) code=\((error as NSError).code)") }
  }
@@ -438,13 +459,11 @@ struct ContentView: View {
  WelcomeView(model:model,dropTargeted:videoDropTargeted)
  }
  }.padding(.leading,20).padding(.vertical,20).frame(maxWidth:.infinity,maxHeight:.infinity).guideTarget(.importVideo)
- VStack(spacing:0) {
- ScrollView { settings.padding(.horizontal,20).padding(.top,20).padding(.bottom,16) }
- .frame(maxHeight:.infinity)
- actions.padding(.horizontal,20).padding(.top,12).padding(.bottom,20)
- }.frame(width:380)
+ rightPanel
  }.background(Color.primary.opacity(0.045)).background(Color(nsColor:.windowBackgroundColor))
- .frame(minWidth:900,minHeight:640)
+ // Keep the inspector and delivery actions in a single, stable layout. The
+ // window cannot be shrunk into a state where controls overlap or compress.
+ .frame(minWidth:1180,minHeight:740)
  .accessibilityHidden(model.guideStep != nil)
  .task {
  await model.loadFinished()
@@ -470,6 +489,17 @@ struct ContentView: View {
  .onChange(of:model.watermark.opacity) { _,_ in model.watermarkChanged();model.rememberWatermark() }
  .onDrop(of:[.fileURL],isTargeted:$videoDropTargeted) { providers in guard !model.busy,let p=providers.first else { return false }; _=p.loadObject(ofClass:URL.self) { u,_ in if let u { Task { @MainActor in model.load(u) } } }; return true }
  }
+ var rightPanel:some View {
+  VStack(spacing:0) {
+   settings
+    .padding(.horizontal,20)
+    .padding(.top,20)
+    .padding(.bottom,16)
+    .frame(maxHeight:.infinity,alignment:.top)
+   actions.padding(.horizontal,20).padding(.top,6).padding(.bottom,20)
+  }
+  .frame(width:380)
+ }
  var actions:some View { FinishedActions(model:model) }
 
  var editor: some View {
@@ -482,28 +512,28 @@ struct ContentView: View {
  Text(L(model.info)).font(.caption).foregroundStyle(.secondary).lineLimit(1).fixedSize()
  }
 
- Timeline(model:model).frame(height:84).disabled(model.busy)
- ViewThatFits(in:.horizontal) {
- HStack(spacing:10) { timelineRange.fixedSize();Spacer(minLength:8);timelineActions.fixedSize() }
- VStack(alignment:.leading,spacing:8) {
- timelineRange
- HStack { Spacer();timelineActions }
- }
- }.disabled(model.busy)
- if model.visibleDuration < model.duration { HStack { Label(L("浏览"),systemImage:"slider.horizontal.3").font(.caption).foregroundStyle(.secondary); Slider(value:Binding(get:{model.visibleStart},set:{model.browseTimeline(to:$0)}),in:0...max(0.001,model.duration-model.visibleDuration)).accessibilityLabel(L("浏览长视频")); Text("\(model.visibleStart,specifier:"%.1f") s").font(.caption).monospacedDigit().frame(width:55) }.frame(height:18).disabled(model.busy) }
+ Timeline(model:model).frame(height:model.visibleDuration < model.duration ? 88 : 64).disabled(model.busy)
+ HStack(spacing:8) {
+  timelineRange
+   .fixedSize(horizontal:true,vertical:false)
+  Spacer(minLength:8)
+  timelineSelectionInfo
+   .fixedSize(horizontal:true,vertical:false)
+  timelineActions
+   .fixedSize(horizontal:true,vertical:false)
+ }.frame(maxWidth:.infinity,alignment:.leading).disabled(model.busy)
  }
  }
  var timelineRange:some View {
- HStack(spacing:10) {
- Label { Text("\(model.start,specifier:"%.2f")–\(model.start+model.length,specifier:"%.2f") s").monospacedDigit() } icon: { Image(systemName:"clock") }.font(.caption)
- Picker(L("时间轴"),selection:$model.timelineSpan) { Text(L("全片")).tag(0.0); Text(L("10 秒")).tag(10.0); Text(L("30 秒")).tag(30.0); Text(L("60 秒")).tag(60.0) }.labelsHidden().frame(width:90).help(L("时间轴显示范围")).onChange(of:model.timelineSpan) { _,_ in model.centerTimeline() }
+ Picker(L("显示范围"),selection:$model.timelineSpan) { Text(L("全片")).tag(0.0); Text(L("10 秒")).tag(10.0); Text(L("30 秒")).tag(30.0); Text(L("60 秒")).tag(60.0) }.labelsHidden().frame(width:82).help(L("时间轴显示范围")).onChange(of:model.timelineSpan) { _,_ in model.centerTimeline() }
  }
+ var timelineSelectionInfo:some View {
+ let end=model.start+model.length
+ let rangeValue=String(format:"起点 %.2f 秒，终点 %.2f 秒，长度 %.2f 秒",model.start,end,model.length)
+ return Label { HStack(spacing:4) { Text(L("选区")); Text("\(model.start,specifier:"%.2f")–\(end,specifier:"%.2f") s").monospacedDigit(); Text("·").foregroundStyle(.secondary); Text(L("时长")); Text("\(model.length,specifier:"%.2f") s").monospacedDigit() } } icon: { Image(systemName:"clock") }.font(.caption).accessibilityLabel(L("选区时间范围")).accessibilityValue(L(rangeValue))
  }
  var timelineActions:some View {
- HStack(spacing:10) {
- Button(L(model.previewing ? "停止" : "预览选区"),systemImage:model.previewing ? "stop.fill" : "play.fill") { model.preview() }
- Button(L("重置为 3 秒"),systemImage:"arrow.counterclockwise") { model.resetOutputDuration() }.help(L("将输出时长恢复为 3 秒；素材不足时使用可用长度。拖动选区两端可自定时长。"))
- }
+ Button(L("重置为 3 秒"),systemImage:"arrow.counterclockwise") { model.resetOutputDuration() }.controlSize(.small).help(L("将输出时长恢复为 3 秒；素材不足时使用可用长度。拖动选区两端可自定时长。"))
  }
  var settings: some View { EditorInspector(model:model) }
 
@@ -516,7 +546,7 @@ struct Timeline: View {
  GeometryReader { g in
  let w=g.size.width, span=model.visibleDuration, origin=model.visibleStart
  let x=w*(model.start-origin)/span, selectedWidth=w*model.length/span
- VStack(spacing:5) {
+ VStack(spacing:6) {
  ZStack(alignment:.leading) {
  HStack(spacing:0) { ForEach(Array(model.thumbnails.enumerated()),id:\.offset) { _,img in Image(nsImage:img).resizable().scaledToFill().frame(width:w*model.thumbnailSpan/span/CGFloat(max(1,model.thumbnails.count)),height:54).clipped() } }.frame(width:w*model.thumbnailSpan/span,alignment:.leading).offset(x:w*(model.thumbnailStart-origin)/span).frame(width:w,height:54,alignment:.leading).clipped()
  Color.black.opacity(0.35).frame(width:w,height:54).allowsHitTesting(false)
@@ -527,11 +557,53 @@ struct Timeline: View {
  Rectangle().fill(.white).frame(width:3,height:64).overlay(Image(systemName:"diamond.fill").font(.system(size:9)).foregroundStyle(.white).offset(y:-29)).frame(width:14).contentShape(Rectangle()).offset(x:w*(model.start+model.cover-origin)/span-7)
  .gesture(DragGesture().onChanged { v in if dragStart==nil { dragStart=model.cover };model.cover=min(max(0,(dragStart ?? 0)+v.translation.width/w*span),max(0,model.length-0.02));model.seek() }.onEnded { _ in dragStart=nil })
  }.frame(width:w,height:64).clipped()
- HStack { ForEach(0..<5) { i in if i>0 { Spacer() }; Text("\(origin+span*Double(i)/4,specifier:"%.1f")s").font(.system(size:10,design:.monospaced)).foregroundStyle(.secondary) } }
+ if model.visibleDuration < model.duration {
+  TimelineNavigator(model:model).frame(height:24).disabled(model.busy)
+ }
  }
  }.accessibilityElement(children:.ignore).accessibilityLabel(L("视频选区")).accessibilityValue(L("起点 \(model.start) 秒，长度 \(model.length) 秒")).accessibilityAdjustableAction { direction in switch direction { case .increment:model.start=min(model.duration-model.length,model.start+0.1);case .decrement:model.start=max(0,model.start-0.1);@unknown default:break };model.centerTimeline();model.seek() }
  }
  var handle:some View { RoundedRectangle(cornerRadius:3).fill(.blue).overlay(Capsule().fill(.white).frame(width:2,height:18)) }
+}
+struct TimelineNavigator: View {
+ @Bindable var model: Model
+ private let handleRadius:CGFloat=6
+ private let labelWidth:CGFloat=92
+ var body: some View {
+  GeometryReader { g in
+   let maxStart=max(0,model.duration-model.visibleDuration)
+   let trackWidth=max(1,g.size.width)
+   let fraction=maxStart > 0 ? min(max(model.visibleStart/maxStart,0),1) : 0
+   let thumbX=min(max(handleRadius,trackWidth*fraction),max(handleRadius,trackWidth-handleRadius))
+   let labelX=min(max(thumbX,labelWidth/2+4),g.size.width-labelWidth/2-4)
+   let visibleEnd=model.visibleStart+model.visibleDuration
+   let rangeText=String(format:"%.1f–%.1f s",model.visibleStart,visibleEnd)
+   let rangeValue=String(format:"可视范围 %.1f–%.1f 秒",model.visibleStart,visibleEnd)
+   ZStack(alignment:.leading) {
+    Capsule().fill(Color.secondary.opacity(0.22)).frame(width:trackWidth,height:4)
+    Capsule().fill(Color.accentColor.opacity(0.7)).frame(width:max(4,trackWidth*fraction),height:4)
+    Circle().fill(Color.accentColor).frame(width:handleRadius*2,height:handleRadius*2).shadow(color:.black.opacity(0.18),radius:2,y:1).offset(x:thumbX-handleRadius)
+    Text(rangeText).font(.caption2.monospacedDigit()).frame(width:labelWidth).padding(.vertical,2).background(.thinMaterial,in:Capsule()).offset(x:labelX-labelWidth/2,y:-18).allowsHitTesting(false)
+   }
+   .frame(maxWidth:.infinity,maxHeight:.infinity)
+   .contentShape(Rectangle())
+   .gesture(DragGesture(minimumDistance:0).onChanged { value in
+    let position=min(max(value.location.x,0),trackWidth)
+    model.browseTimeline(to:position/trackWidth*maxStart)
+   })
+   .accessibilityElement(children:.ignore)
+   .accessibilityLabel(L("时间定位"))
+   .accessibilityValue(L(rangeValue))
+   .accessibilityAdjustableAction { direction in
+    let step=max(0.1,min(model.visibleDuration/2,maxStart/20))
+    switch direction {
+    case .increment:model.browseTimeline(to:min(maxStart,model.visibleStart+step))
+    case .decrement:model.browseTimeline(to:max(0,model.visibleStart-step))
+    @unknown default:break
+    }
+   }
+  }
+ }
 }
 struct NativePlayer: NSViewRepresentable {
  let player:AVPlayer

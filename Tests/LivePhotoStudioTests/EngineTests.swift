@@ -6,6 +6,7 @@ import AVFoundation
 import Photos
 import ImageIO
 import UniformTypeIdentifiers
+import Darwin
 @testable import LivePhotoStudio
 
 /// End-to-end tests for the conversion engine. Each test generates a real H.264
@@ -58,6 +59,27 @@ final class EngineTests: XCTestCase {
         let after = try await compressedVideoBytes(result.movURL)
         XCTAssertFalse(before.isEmpty, "測試影片沒讀到任何樣本")
         XCTAssertEqual(before, after, "影片壓縮位元流應與來源完全相同(零損失)")
+    }
+
+    /// An unsupported source codec must fall back to a high-quality transcode
+    /// instead of surfacing the old "choose Custom mode" error. The debug
+    /// hook exercises that branch with a generated H.264 fixture.
+    func testUnsupportedVideoCodecFallsBackToTranscode() async throws {
+        #if DEBUG
+        let src = tmp.appendingPathComponent("unsupported-codec-fallback.mp4")
+        try makeTestVideo(at: src)
+        setenv("REVIVE_FORCE_REENCODE", "1", 1)
+        defer { unsetenv("REVIVE_FORCE_REENCODE") }
+
+        let result = try await LivePhotoEngine.convert(
+            input: src, outputDir: tmp, baseName: "FALLBACK", settings: ConversionSettings())
+
+        XCTAssertFalse(result.videoWasCopied, "不兼容编码应自动转码")
+        let checks = await Verifier.verify(imageURL: result.imageURL, movURL: result.movURL)
+        XCTAssertTrue(checks.allSatisfy { $0.status == .pass })
+        #else
+        throw XCTSkip("Debug-only codec fallback hook")
+        #endif
     }
 
     @MainActor func testOriginalCropResetPreservesVideoAfterModelLoad() async throws {

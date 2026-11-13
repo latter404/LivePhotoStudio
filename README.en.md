@@ -12,11 +12,15 @@ LivePhoto Studio is a native macOS app for turning video clips into Live Photos 
 
 ## Feature screenshots
 
-![LivePhoto Studio 1.7 editor with video preview, timeline, editing settings, and output settings](Assets/editor-1.7-public.png)
+![LivePhoto Studio 1.7.1 editor with video preview, timeline, editing settings, and output settings](Assets/editor-1.7.1.png)
 
-![LivePhoto Studio 1.7 output settings for Live Photos, GIFs, original size, and estimates](Assets/output-1.7-public.png)
+![LivePhoto Studio 1.7.1 output settings for Live Photos, GIFs, original size, and estimates](Assets/output-1.7.1-custom.png)
 
-![LivePhoto Studio 1.7 processed list with batch selection, preview, and export](Assets/processed-1.7-public.png)
+![LivePhoto Studio 1.7.1 processed list with batch selection, preview, and export](Assets/processed-1.7.1.png)
+
+![LivePhoto Studio 1.7.1 GIF output settings](Assets/output-1.7.1-gif.png)
+
+![LivePhoto Studio 1.7.1 Live Photo collage](Assets/collage-1.7.1.png)
 
 ## Features
 
@@ -64,11 +68,11 @@ Change these from the **Settings** menu. A spotlight guide appears on first use 
 
 ## Validation scope
 
-Public validation notes describe reproducible source, build, package, and synthetic-media checks only. They do not include private devices, personal files, or internal conversation details.
+Validation scope is based on automated tests, build audits, and interface checks.
 
 - Automated tests cover Live Photo pairing metadata, timing, speed, GIF estimates, crop, rotation, watermarks, batch results, file export, and failure cleanup.
 - The build workflow checks the Apple silicon / Intel universal package, Finder extension, signing, resources, and runtime dependencies.
-- Screenshots use dedicated demo material; screenshots are not a substitute for complete device compatibility coverage.
+- Screenshots illustrate the interface; they are not a substitute for complete device compatibility coverage.
 - 4K / 8K options describe supported output paths; time and availability depend on the source, codec, memory, and disk space.
 
 ## License and third-party notices

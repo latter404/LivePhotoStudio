@@ -10,7 +10,7 @@ args=parser.parse_args()
 if args.test is not None and (not args.test.strip() or len(args.test.strip())>40):
     parser.error('Test purpose must contain 1–40 characters.')
 app=Path(args.contents)
-base=dict(CFBundleDevelopmentRegion='zh-Hans',CFBundleLocalizations=['zh-Hans','en'],CFBundleVersion='42',CFBundleShortVersionString='1.7',LSMinimumSystemVersion='14.0')
+base=dict(CFBundleDevelopmentRegion='zh-Hans',CFBundleLocalizations=['zh-Hans','en'],CFBundleVersion='43',CFBundleShortVersionString='1.7.1',LSMinimumSystemVersion='14.0')
 test_suffix=f" · 测试版 {base['CFBundleShortVersionString']} · {args.test.strip()}" if args.test else ''
 main=dict(base,CFBundleIdentifier='local.livephotostudio.app',CFBundleName='实况工坊'+test_suffix,CFBundleDisplayName='实况工坊'+test_suffix,CFBundleExecutable='LivePhotoStudio',CFBundleIconFile='AppIcon',CFBundlePackageType='APPL',NSPrincipalClass='NSApplication',NSHumanReadableCopyright='© 2026 latter404',CFBundleURLTypes=[dict(CFBundleURLName='livephotostudio.open',CFBundleURLSchemes=['livephotostudio'])],NSPhotoLibraryAddUsageDescription='将你生成的实况照片或 GIF 添加到照片图库。',CFBundleDocumentTypes=[dict(CFBundleTypeName='Video',CFBundleTypeRole='Viewer',LSHandlerRank='Alternate',LSItemContentTypes=['public.movie'])])
 ext=dict(base,CFBundleIdentifier='local.livephotostudio.app.finder',CFBundleName='实况工坊 Finder',CFBundleExecutable='LivePhotoFinder',CFBundlePackageType='XPC!',NSExtension=dict(NSExtensionPointIdentifier='com.apple.FinderSync',NSExtensionPrincipalClass='LivePhotoFinder'))

@@ -25,10 +25,10 @@ final class LiveCollageTests:XCTestCase {
  func testLiveCollageHasMotionInEveryTileAndMatchingCover() async throws {
  let first=root.appendingPathComponent("red.mov"),second=root.appendingPathComponent("blue.mov")
  try fixture(first);try fixture(second,rotated:true)
- for (layout,fps) in [(CollageLayout.horizontal,24),(.vertical,50),(.grid,60)] {
+ for (name,layout,fps) in [("horizontal24",CollageLayout.horizontal,24),("horizontal25",CollageLayout.horizontal,25),("vertical50",.vertical,50),("grid60",.grid,60)] {
  var options=CollageOptions();options.layout=layout;options.maxEdge=640;options.fps=fps;options.duration=0.8
  let inputs=layout == .grid ? [first,second,first] : [first,second]
- let pair=try await LiveCollage.generate(inputs:inputs,options:options,in:root.appendingPathComponent(layout.rawValue))
+ let pair=try await LiveCollage.generate(inputs:inputs,options:options,in:root.appendingPathComponent(name))
  XCTAssertFalse(pair.videoWasCopied);XCTAssertEqual(pair.clipDuration,0.8,accuracy:0.002)
  let checks=await Verifier.verify(imageURL:pair.imageURL,movURL:pair.movURL);XCTAssertTrue(checks.allSatisfy{$0.status == .pass})
  let early=try await frame(pair.movURL,0.1),late=try await frame(pair.movURL,0.7)
@@ -51,7 +51,7 @@ final class LiveCollageTests:XCTestCase {
  }
  }
  XCTAssertTrue(recognized)
- let shared=try await ShareBatch.prepare(assets:[.livePhoto(pair)],in:root.appendingPathComponent("share-"+layout.rawValue))
+ let shared=try await ShareBatch.prepare(assets:[.livePhoto(pair)],in:root.appendingPathComponent("share-"+name))
  XCTAssertEqual(shared.count,1)
  XCTAssertEqual(try Data(contentsOf:shared[0].appendingPathComponent(pair.movURL.lastPathComponent)),try Data(contentsOf:pair.movURL))
  let audio=try await AVURLAsset(url:pair.movURL).loadTracks(withMediaType:.audio);XCTAssertTrue(audio.isEmpty)

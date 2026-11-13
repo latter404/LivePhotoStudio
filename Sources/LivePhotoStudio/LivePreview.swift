@@ -11,10 +11,15 @@ struct LivePreview: View {
  var body:some View {
  VStack(spacing:14) {
  HStack { Label(L("实况照片预览"),systemImage:"livephoto").font(.headline);Spacer();Button(L("完成")) { dismiss() } }
- if let photo { LivePhotoPlayer(photo:photo,play:play).frame(maxWidth:.infinity,maxHeight:.infinity);Button(L("播放实况"),systemImage:"play.fill") { play += 1 }.buttonStyle(.borderedProminent) }
+ if let photo {
+  LivePhotoPlayer(photo:photo,play:play)
+   .frame(maxWidth:.infinity,maxHeight:.infinity)
+   .contentShape(Rectangle())
+   .onTapGesture { play += 1 }
+ }
  else if failed { Text(L("系统无法加载这组实况文件，请重新导出。")).frame(maxWidth:.infinity,maxHeight:.infinity) }
  else { ProgressView(L("正在加载实况…")).frame(maxWidth:.infinity,maxHeight:.infinity) }
- Text(L("这里播放的是按当前选区和设置生成的实况。关闭预览后可直接点击「隔空投送」，发送完整实况包到 iPhone。")).font(.callout).foregroundStyle(.secondary)
+ Text(L("这里播放的是按当前选区和设置生成的实况。点击预览区域开始播放，之后可将鼠标移到实况图标上再次播放。关闭预览后可直接点击「隔空投送」，发送完整实况包到 iPhone。")).font(.callout).foregroundStyle(.secondary)
  }.padding(20).frame(width:640,height:600)
  .task {
  let loaded:PHLivePhoto?=await withCheckedContinuation { continuation in
