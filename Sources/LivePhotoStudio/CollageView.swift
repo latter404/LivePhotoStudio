@@ -93,15 +93,24 @@ struct CollageView:View {
  if model.busy {HStack(spacing:6) {ProgressView().controlSize(.small);Text(L("正在生成实况拼图…")).font(.caption).lineLimit(1)}}
  HStack(spacing:10) {
   Button {
-   guard !model.busy else { return }
-   model.sendFinished()
-   dismiss()
+   guard !model.busy, geometry != nil else { return }
+   task=Task {
+    do {
+     // Generate first so the existing delivery path sends only the new
+     // collage instead of reusing the original selection from FinishedView.
+     try await model.createCollage(ids:items.map(\.id),options:options)
+     model.sendFinished()
+     dismiss()
+    } catch is CancellationError { error="" }
+    catch { self.error=error.localizedDescription }
+   }
   } label: {
    Label(L("隔空投送"),systemImage:"antenna.radiowaves.left.and.right")
     .frame(maxWidth:.infinity).frame(height:32)
   }
   .buttonStyle(.bordered).controlSize(.large).buttonBorderShape(.capsule)
-  .disabled(model.busy || model.selectedFinished.isEmpty)
+  .disabled(model.busy || geometry==nil)
+  .help(L("先生成拼图，再隔空投送新拼图"))
   Button {
    task=Task {
     do {try await model.createCollage(ids:items.map(\.id),options:options);dismiss()}

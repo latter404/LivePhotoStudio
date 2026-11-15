@@ -78,6 +78,7 @@ enum UIStrings {
         "前移":"Move Earlier",
         "后移":"Move Later",
         "生成拼图":"Create Collage",
+        "先生成拼图，再隔空投送新拼图":"Create the collage first, then AirDrop the new collage",
         "保留第一张的声音":"Keep First Item’s Audio",
         "不超过最短片段，默认最多 3 秒。":"Limited to the shortest clip; defaults to at most 3 seconds.",
         "拼图会高质量重新编码为 SDR。原实况保留，生成后仅选中新拼图。预览展示排版，封面取自合成画面中间。":"Collages are re-encoded to SDR at high quality. Originals are kept; only the new collage is selected. This preview shows layout; the cover comes from the middle of the combined video.",
