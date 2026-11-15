@@ -106,7 +106,7 @@ extension NSSharingService:AirDropSharingService { }
  }
  func sharingService(_ sharingService:NSSharingService,didShareItems items:[Any]) {
  ExportDiagnostics.record("airdrop.delegate.didShare")
- completion(token,"隔空投送窗口已关闭 · 发送结果请以系统窗口和接收设备为准",true)
+ completion(token,"",true)
  }
  func sharingService(_ sharingService:NSSharingService,didFailToShareItems items:[Any],error:Error) {
  ExportDiagnostics.record("airdrop.delegate.didFail")

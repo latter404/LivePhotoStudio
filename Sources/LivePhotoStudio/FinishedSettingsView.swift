@@ -11,7 +11,14 @@ struct FinishedSettingsView: View {
             HStack {
                 Label(L("存储与清理"), systemImage: "tray.full").font(.title2.weight(.semibold))
                 Spacer()
-                Button(L("完成")) { dismiss() }.keyboardShortcut(.cancelAction).disabled(model.busy)
+                Button { dismiss() } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 13, weight: .semibold))
+                        .frame(width: 28, height: 28)
+                }
+                .buttonStyle(.plain).contentShape(Rectangle())
+                .accessibilityLabel(L("关闭")).help(L("关闭"))
+                .keyboardShortcut(.cancelAction).disabled(model.busy)
             }
 
             VStack(alignment: .leading, spacing: 14) {

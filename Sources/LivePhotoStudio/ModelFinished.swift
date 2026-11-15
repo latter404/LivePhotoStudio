@@ -71,13 +71,18 @@ extension Model {
  return items
  }
  func completedFinished(_ ids:Set<UUID>,delete:Bool,message:String) async {
- status=message;finishedStatus=message
+ let baseMessage=message.trimmingCharacters(in:.whitespacesAndNewlines)
+ status=baseMessage;finishedStatus=baseMessage
  guard delete else { return }
  do {
  try await finishedStore.remove(ids:ids)
  await refreshFinished()
- status=message+" · 已移到废纸篓";finishedStatus=status
- } catch { status=message+" · 处理结果清理未完成："+error.localizedDescription;finishedStatus=status;await refreshFinished() }
+ let cleanupMessage=baseMessage.isEmpty ? "已移到废纸篓" : baseMessage+" · 已移到废纸篓"
+ status=cleanupMessage;finishedStatus=status
+ } catch {
+ let cleanupMessage=baseMessage.isEmpty ? "处理结果清理未完成："+error.localizedDescription : baseMessage+" · 处理结果清理未完成："+error.localizedDescription
+ status=cleanupMessage;finishedStatus=status;await refreshFinished()
+ }
  }
  func saveFinishedPhotos() {
  let ids=Set(selectedFinished.map(\.id));guard !busy,!ids.isEmpty else { return }

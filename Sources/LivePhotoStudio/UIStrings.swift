@@ -191,7 +191,7 @@ enum UIStrings {
         "实况文件不完整或配对校验失败，请重新导出。":"The Live Photo files are incomplete or do not match. Export again.",
         "分享包已存在，请重试。":"The share package already exists. Try again.", "请先完成或取消当前隔空投送。":"Finish or cancel the current AirDrop first.",
         "当前系统无法启动隔空投送，请检查设备设置后重试。":"AirDrop is unavailable. Check device settings and try again.", "当前系统无法启动隔空投送。":"AirDrop is unavailable.",
-        "实况照片预览":"Live Photo Preview", "完成":"Done", "播放实况":"Play Live Photo", "系统无法加载这组实况文件，请重新导出。":"The system could not load this Live Photo. Export again.",
+        "实况照片预览":"Live Photo Preview", "完成":"Done", "取消":"Cancel", "关闭":"Close", "播放实况":"Play Live Photo", "系统无法加载这组实况文件，请重新导出。":"The system could not load this Live Photo. Export again.",
         "正在加载实况…":"Loading Live Photo…", "这里播放的是按当前选区和设置生成的实况。关闭预览后可直接点击「隔空投送」，发送完整实况包到 iPhone。":"This preview uses the current clip and settings. Close it and choose AirDrop to send the Live Photo to iPhone.",
         "显示导出诊断记录":"Show Export Diagnostics",
         "将 GIF 添加到照片图库":"Add the GIF to your Photos library",

@@ -445,7 +445,7 @@ final class Delegate: NSObject, NSApplicationDelegate {
  Window(L("实况工坊"), id:"main") {
  ContentView(model: Model.shared).id(AppPreferences.shared.language.rawValue)
  .environment(\.locale, AppPreferences.shared.locale)
- }.defaultSize(width:1180,height:780).commands { AppCommands() }
+ }.defaultSize(width:1180,height:780).windowResizability(.contentMinSize).commands { AppCommands() }
  }
 }
 struct ContentView: View {
@@ -493,12 +493,14 @@ struct ContentView: View {
   VStack(spacing:0) {
    settings
     .padding(.horizontal,20)
-    .padding(.top,20)
-    .padding(.bottom,16)
-    .frame(maxHeight:.infinity,alignment:.top)
-   actions.padding(.horizontal,20).padding(.top,6).padding(.bottom,20)
+    .padding(.top,12)
+    .padding(.bottom,10)
+    .fixedSize(horizontal:false,vertical:true)
+   Spacer(minLength:18)
+   actions.padding(.horizontal,20).padding(.top,4).padding(.bottom,12)
   }
   .frame(width:380)
+  .frame(maxHeight:.infinity,alignment:.bottom)
  }
  var actions:some View { FinishedActions(model:model) }
 

@@ -10,7 +10,17 @@ struct LivePreview: View {
  @State private var play=0
  var body:some View {
  VStack(spacing:14) {
- HStack { Label(L("实况照片预览"),systemImage:"livephoto").font(.headline);Spacer();Button(L("完成")) { dismiss() } }
+ HStack {
+  Label(L("实况照片预览"),systemImage:"livephoto").font(.headline)
+  Spacer()
+  Button { dismiss() } label: {
+   Image(systemName:"xmark")
+    .font(.system(size:13,weight:.semibold))
+    .frame(width:28,height:28)
+  }
+  .buttonStyle(.plain).contentShape(Rectangle()).accessibilityLabel(L("关闭")).help(L("关闭"))
+  .keyboardShortcut(.cancelAction)
+ }
  if let photo {
   LivePhotoPlayer(photo:photo,play:play)
    .frame(maxWidth:.infinity,maxHeight:.infinity)

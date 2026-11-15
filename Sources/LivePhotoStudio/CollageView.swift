@@ -21,7 +21,21 @@ struct CollageView:View {
  private var geometry:CollageGeometry? {try? CollageGeometry(sizes:sizes,layout:options.layout,maxEdge:options.maxEdge)}
  var body:some View {
  VStack(alignment:.leading,spacing:16) {
- HStack {Label(L("实况拼图"),systemImage:"square.grid.2x2").font(.title2.weight(.semibold));Spacer()}
+ HStack {
+  Label(L("实况拼图"),systemImage:"photo.stack").font(.title2.weight(.semibold))
+  Spacer()
+  Button {
+   if model.busy { task?.cancel() } else { dismiss() }
+  } label: {
+   Image(systemName:"xmark")
+    .font(.system(size:13,weight:.semibold))
+    .frame(width:28,height:28)
+  }
+   .buttonStyle(.plain).contentShape(Rectangle())
+   .accessibilityLabel(L(model.busy ? "取消" : "关闭"))
+   .help(L(model.busy ? "取消" : "关闭"))
+   .keyboardShortcut(.cancelAction)
+ }
  HStack(alignment:.top,spacing:24) {
  CollageLivePreview(items:items,root:model.finishedStore.root,options:options,loader:previewLoader) {
   GeometryReader { proxy in
@@ -75,22 +89,43 @@ struct CollageView:View {
  Spacer(minLength:0)
  }.frame(width:280,alignment:.trailing).disabled(model.busy)
  }.frame(maxWidth:.infinity,alignment:.leading).frame(height:350)
- if !error.isEmpty {Text(error).font(.caption).foregroundStyle(.red).lineLimit(3)}
  HStack(alignment:.center,spacing:12) {
- Text(L("拼图会高质量重新编码为 SDR。原实况保留，生成后仅选中新拼图。"))
-  .font(.caption).foregroundStyle(.secondary).lineLimit(2).fixedSize(horizontal:false,vertical:true)
-  .frame(maxWidth:.infinity,alignment:.leading)
+ if !error.isEmpty {Text(error).font(.caption).foregroundStyle(.red).lineLimit(2)} else { Spacer(minLength:0) }
  if model.busy {ProgressView().controlSize(.small);Text(L("正在生成实况拼图…")).font(.caption).lineLimit(1)}
- Button(L("取消")) {if model.busy {task?.cancel()} else {dismiss()}}.keyboardShortcut(.cancelAction)
- Button(L("生成拼图"),systemImage:"square.grid.2x2") {
- task=Task {
- do {try await model.createCollage(ids:items.map(\.id),options:options);dismiss()}
- catch is CancellationError {error=""}
- catch {self.error=error.localizedDescription}
+ HStack(spacing:10) {
+  Button {
+   guard !model.busy else { return }
+   model.sendFinished()
+   dismiss()
+  } label: {
+   Label(L("隔空投送"),systemImage:"antenna.radiowaves.left.and.right")
+    .frame(maxWidth:.infinity).frame(height:32)
+  }
+  .buttonStyle(.bordered).controlSize(.large).buttonBorderShape(.capsule)
+  .disabled(model.busy || model.selectedFinished.isEmpty)
+  Button {
+   task=Task {
+    do {try await model.createCollage(ids:items.map(\.id),options:options);dismiss()}
+    catch is CancellationError {error=""}
+    catch {self.error=error.localizedDescription}
+   }
+  } label: {
+   Label(L("生成拼图"),systemImage:"square.grid.2x2")
+    .frame(maxWidth:.infinity).frame(height:32)
+  }
+  .buttonStyle(.borderedProminent).controlSize(.large).buttonBorderShape(.capsule)
+  .disabled(model.busy || geometry==nil)
+  .help(L("拼图会高质量重新编码为 SDR。原实况保留，生成后仅选中新拼图。"))
+  .keyboardShortcut(.defaultAction).contextGuideTarget(.collageGenerate)
+ }.frame(width:340)
  }
- }.buttonStyle(.borderedProminent).disabled(model.busy || geometry==nil).keyboardShortcut(.defaultAction).contextGuideTarget(.collageGenerate)
+ }.padding(20).frame(width:720)
+ .background {
+  Color.clear.contentShape(Rectangle()).onTapGesture {
+   if !model.busy { dismiss() }
+  }
  }
- }.padding(20).frame(width:720).interactiveDismissDisabled(model.busy)
+ .interactiveDismissDisabled(model.busy)
  .overlayPreferenceValue(ContextGuideTargetPreferenceKey.self) { anchors in
   if showContextGuide {
    ContextGuideOverlay(target:.collageGenerate,symbol:"square.grid.2x2",title:UIStrings.isEnglish ? "Create the collage" : "生成实况拼图",detail:UIStrings.isEnglish ? "Arrange the selected Live Photos, choose the output settings, then create one new Live Photo here." : "调整选中的实况照片排版和输出参数，然后在这里生成一张新的实况拼图。",anchors:anchors) {
