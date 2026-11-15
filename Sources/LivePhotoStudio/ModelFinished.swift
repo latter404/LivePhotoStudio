@@ -199,7 +199,7 @@ extension Model {
  guard !busy else {return}
  finishedSelection=allFinishedSelected ? [] : Set(finishedItems.map(\.id))
  }
- var canCollage:Bool { (2...9).contains(selectedFinished.count) && selectedFinished.allSatisfy{$0.kind == .livePhoto && $0.isAvailable} }
+ var canCollage:Bool { (2...9).contains(selectedFinished.count) && selectedFinished.allSatisfy{$0.kind == .livePhoto && $0.isAvailable && !$0.isCollage} }
  func createCollage(ids:[UUID],options:CollageOptions) async throws {
  guard !busy,Set(ids).count==ids.count,(2...9).contains(ids.count) else {throw EngineError.cannotWrite(L("请选择 2–9 张实况照片"))}
  busy=true;seek();finishedStatus=L("正在生成实况拼图…")

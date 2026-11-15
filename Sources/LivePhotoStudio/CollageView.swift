@@ -37,6 +37,7 @@ struct CollageView:View {
    .keyboardShortcut(.cancelAction)
  }
  HStack(alignment:.top,spacing:24) {
+ VStack(alignment:.leading,spacing:10) {
  CollageLivePreview(items:items,root:model.finishedStore.root,options:options,loader:previewLoader) {
   GeometryReader { proxy in
    if let geometry {
@@ -63,7 +64,8 @@ struct CollageView:View {
    } else {ProgressView().frame(maxWidth:.infinity,maxHeight:.infinity)}
   }
  }
- .frame(minWidth:350).clipped().background(.black.opacity(0.05),in:RoundedRectangle(cornerRadius:10))
+ .frame(maxWidth:.infinity).frame(height:350).clipped().background(.black.opacity(0.05),in:RoundedRectangle(cornerRadius:10))
+ }.frame(maxWidth:.infinity,alignment:.leading)
  VStack(alignment:.leading,spacing:14) {
  collageSettingRow("布局",symbol:"rectangle.split.3x1") {
   Picker(selection:$options.layout) {ForEach(CollageLayout.allCases) {layout in Label(layout.title,systemImage:layout.symbol).tag(layout)}} label: {EmptyView()}
@@ -87,11 +89,8 @@ struct CollageView:View {
    .labelsHidden().pickerStyle(.menu).help(L("不超过最短片段，默认最多 3 秒。"))
  }
  Spacer(minLength:0)
- }.frame(width:280,alignment:.trailing).disabled(model.busy)
- }.frame(maxWidth:.infinity,alignment:.leading).frame(height:350)
- HStack(alignment:.center,spacing:12) {
- if !error.isEmpty {Text(error).font(.caption).foregroundStyle(.red).lineLimit(2)} else { Spacer(minLength:0) }
- if model.busy {ProgressView().controlSize(.small);Text(L("正在生成实况拼图…")).font(.caption).lineLimit(1)}
+ if !error.isEmpty {Text(error).font(.caption).foregroundStyle(.red).lineLimit(2).frame(maxWidth:.infinity,alignment:.leading)}
+ if model.busy {HStack(spacing:6) {ProgressView().controlSize(.small);Text(L("正在生成实况拼图…")).font(.caption).lineLimit(1)}}
  HStack(spacing:10) {
   Button {
    guard !model.busy else { return }
@@ -117,7 +116,8 @@ struct CollageView:View {
   .disabled(model.busy || geometry==nil)
   .help(L("拼图会高质量重新编码为 SDR。原实况保留，生成后仅选中新拼图。"))
   .keyboardShortcut(.defaultAction).contextGuideTarget(.collageGenerate)
- }.frame(width:340)
+ }.frame(maxWidth:.infinity)
+ }.frame(width:280,height:350,alignment:.bottom).disabled(model.busy)
  }
  }.padding(20).frame(width:720)
  .background {

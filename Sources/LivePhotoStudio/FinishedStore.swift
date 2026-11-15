@@ -23,6 +23,9 @@ struct FinishedItem: Codable, Identifiable, Sendable {
     // Recomputed on load. Kept out of metadata so a temporary missing file is
     // never committed as the permanent state of the finished item.
     var isAvailable = true
+    /// A collage is already a composed Live Photo. Keeping it out of the
+    /// collage input set prevents an accidental collage-inside-collage layout.
+    var isCollage: Bool { title == "实况拼图" || title == "Live Collage" }
     private enum CodingKeys: String, CodingKey {
         case id, title, kind, createdAt, start, duration, byteCount, assetID, sourceDuration, videoWasCopied, mediaChecksums, mediaSizes
     }

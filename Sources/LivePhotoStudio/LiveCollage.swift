@@ -43,7 +43,9 @@ struct CollageGeometry {
 }
 
 struct CollageOptions {
- var layout:CollageLayout = .grid
+ // A vertical stack is the safest default for mixed horizontal and portrait
+ // Live Photos: every selected item remains visible without an implicit grid.
+ var layout:CollageLayout = .vertical
  /// 0 means preserve the natural composite size, matching the main export
  /// settings' "原始" option.
  var maxEdge=0
